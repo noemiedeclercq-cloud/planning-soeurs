@@ -6,6 +6,9 @@ from db import init_db, get_conn
 app = Flask(__name__)
 init_db()
 
+@app.get("/api/ping")
+def ping():
+    return {"ok": True}
 
 # ----------------- Helpers -----------------
 DAY_TO_OFFSET = {
