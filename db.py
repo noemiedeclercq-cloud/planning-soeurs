@@ -3,7 +3,12 @@ import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).with_name("planning.db")))
+DB_PATH = Path(
+    os.environ.get(
+        "DB_PATH",
+        "/var/data/planning.db" if os.getenv("RENDER") else Path(__file__).with_name("planning.db")
+    )
+)
 
 
 def get_conn() -> sqlite3.Connection:
