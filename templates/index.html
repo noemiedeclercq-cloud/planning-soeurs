@@ -72,12 +72,32 @@
   .pill .mini{width:8px;height:8px;border-radius:999px;background:#cbd5e1;}
   .pill.locked .mini{background:var(--warn)}
   .pill.ok .mini{background:var(--accent2)}
-
   .pill.issues-ok .mini{ background:#10b981; }
   .pill.issues-warn .mini{ background:#f59e0b; }
   .pill.issues-bad .mini{ background:#ef4444; }
-
   #issuesPill{cursor:pointer}
+
+  .summarybar{
+    display:flex;gap:8px;flex-wrap:wrap;width:100%;
+  }
+  .summarychip{
+    display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;
+    border:1px solid var(--line);background:#fff;font-size:12px;font-weight:900;color:var(--muted);
+  }
+
+  .legend{
+    display:flex;gap:10px;flex-wrap:wrap;width:100%;margin-top:4px;
+  }
+  .legend-item{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:var(--muted);
+  }
+  .legend-dot{
+    width:10px;height:10px;border-radius:999px;display:inline-block;
+  }
+  .legend-dot.empty{background:#fca5a5}
+  .legend-dot.partial{background:#fdba74}
+  .legend-dot.conflict{background:#ef4444}
+  .legend-dot.impossible{background:#8b5cf6}
 
   .planning-wrap{overflow-x:hidden; overflow-y:auto;}
 
@@ -120,6 +140,7 @@
     padding:6px 8px;border-radius:999px;border:1px solid var(--line);
     background:#fbfcff;font-size:12px;font-weight:900;
   }
+
   .table-wrap{border:1px solid var(--line);border-radius:14px;overflow:auto;background:#fff;}
   .datatable{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;}
   .datatable th,.datatable td{
@@ -132,20 +153,23 @@
   }
   .datatable tr td:last-child,.datatable tr th:last-child{border-right:none}
   .datatable tr:last-child td{border-bottom:none}
+
   .actions{display:flex;gap:8px;justify-content:flex-end;}
   .iconbtn{
     border:1px solid var(--line);background:#fff;border-radius:12px;
     padding:7px 9px;cursor:pointer;font-weight:900;color:#334155;
   }
   .iconbtn:hover{background:#f8fafc}
+
   .hint{color:var(--muted);font-size:12px;margin-top:6px;width:100%;}
+
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
     align-items:center;justify-content:center;padding:18px;z-index:50;
   }
   .modal-backdrop.active{display:flex}
   .modal{
-    width:min(860px,100%);border-radius:18px;background:#fff;border:1px solid var(--line);
+    width:min(960px,100%);border-radius:18px;background:#fff;border:1px solid var(--line);
     box-shadow:0 30px 90px rgba(0,0,0,.22);overflow:hidden;
   }
   .modal-head{
@@ -192,34 +216,31 @@
   .badge-warn.darkred{ border-color:#ef4444; }
   .badge-warn.purple{ border-color:#8b5cf6; }
 
-  .legend{
-    display:flex;gap:10px;flex-wrap:wrap;width:100%;margin-top:4px;
-  }
-  .legend-item{
-    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:var(--muted);
-  }
-  .legend-dot{
-    width:10px;height:10px;border-radius:999px;display:inline-block;
-  }
-  .legend-dot.empty{background:#fca5a5}
-  .legend-dot.partial{background:#fdba74}
-  .legend-dot.conflict{background:#ef4444}
-  .legend-dot.impossible{background:#8b5cf6}
-
-  .summarybar{
-    display:flex;gap:8px;flex-wrap:wrap;width:100%;
-  }
-  .summarychip{
-    display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;
-    border:1px solid var(--line);background:#fff;font-size:12px;font-weight:900;color:var(--muted);
-  }
-
   .task.jump-highlight{
     box-shadow:0 0 0 4px rgba(59,130,246,.35);
     transition:box-shadow .2s ease;
   }
 
-  #printDaily,#printWeek{display:none;}
+  .abbess-list{
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .abbess-row{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    background:#fff;
+  }
+  .abbess-name{
+    font-weight:900;
+    margin-bottom:6px;
+  }
+  .abbess-taskline{
+    font-size:13px;
+    color:var(--text);
+    margin-top:4px;
+  }
+
+  #printDaily,#printWeek,#printAbbess{display:none;}
 
   @media print{
     .topbar, #tabs, .toast{display:none!important}
@@ -229,6 +250,7 @@
 
     body.print-daily #printDaily{display:block!important;padding:18px 22px}
     body.print-weekly #printWeek{display:block!important;padding:12px 14px}
+    body.print-abbess #printAbbess{display:block!important;padding:18px 22px}
 
     .p-day{page-break-after:always}
     .p-day:last-child{page-break-after:auto}
@@ -270,6 +292,24 @@
     .pw-task:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
     .pw-task-name{font-weight:900}
     .pw-task-who{color:#111827}
+
+    .ab-title{
+      font-size:20px;font-weight:900;margin:0 0 12px 0;
+    }
+    .ab-row{
+      border-bottom:1px solid #dbe2f2;
+      padding:8px 0;
+    }
+    .ab-name{
+      font-weight:900;
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    .ab-task{
+      font-size:12px;
+      margin-left:10px;
+      margin-top:2px;
+    }
   }
 </style>
 </head>
@@ -305,6 +345,7 @@
           <button class="btn ghost" id="btnUnlock">🔓 Déverrouiller</button>
           <button class="btn ghost" id="btnPdfDay">🖨️ PDF jour</button>
           <button class="btn ghost" id="btnPdfWeek">🗓️ PDF semaine</button>
+          <button class="btn ghost" id="btnPdfAbbess">👑 PDF Abbesse</button>
 
           <span class="pill ok" id="lockPill"><span class="mini"></span>Déverrouillé</span>
           <span class="pill issues-ok" id="issuesPill"><span class="mini"></span>Aucun problème</span>
@@ -321,7 +362,7 @@
           <span class="legend-item"><span class="legend-dot impossible"></span>Impossible</span>
         </div>
 
-        <div class="hint">Génération intelligente: respecte absences + affectations fixes + compétences des sœurs. Les tâches flexibles comme la buanderie passent après les tâches prioritaires, seulement s’il reste du monde.</div>
+        <div class="hint">Le moteur peut maintenant affecter une même sœur à plusieurs tâches dans le même matin ou la même après-midi si les horaires ne se chevauchent pas.</div>
       </div>
 
       <div class="card-body planning-wrap">
@@ -359,6 +400,7 @@
 
       <div id="printDaily"></div>
       <div id="printWeek"></div>
+      <div id="printAbbess"></div>
     </div>
   </section>
 
@@ -375,14 +417,22 @@
           <table class="datatable" id="tasksTable">
             <thead>
               <tr>
-                <th>Nom</th><th>AM/PM</th><th>Jours</th><th>Pers</th><th>Type</th><th>Prio</th><th>Actif</th>
+                <th>Nom</th>
+                <th>AM/PM</th>
+                <th>Heure</th>
+                <th>Durée</th>
+                <th>Jours</th>
+                <th>Pers</th>
+                <th>Type</th>
+                <th>Prio</th>
+                <th>Actif</th>
                 <th style="text-align:right;">Actions</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
-        <div class="hint">Astuce: tu peux ajouter une rotation dans “Règle” (ex: <code>rotation:biscuits,cake,biscuits,cramique; days:Tue,Thu</code>).</div>
+        <div class="hint">Pour une tâche “dans les trous”, mets par exemple Type = Flexible et Heure = Flexible.</div>
       </div>
     </div>
   </section>
@@ -458,6 +508,8 @@
         <div class="field"><label>AM/PM</label>
           <select class="select" id="taskMoment"><option>AM</option><option>PM</option><option>AM+PM</option></select>
         </div>
+        <div class="field"><label>Heure</label><input class="input" id="taskTimeLabel" placeholder="09:30 / 11:00 / Flexible" /></div>
+        <div class="field"><label>Durée (minutes)</label><input class="input" id="taskDuration" type="number" min="1" value="60" /></div>
         <div class="field"><label>Nombre de personnes</label><input class="input" id="taskPeople" type="number" min="1" value="1" /></div>
         <div class="field"><label>Type</label><select class="select" id="taskType"><option>Fixe</option><option>Périodique</option><option>Flexible</option></select></div>
         <div class="field"><label>Priorité (1=obligatoire)</label><select class="select" id="taskPrio"><option>1</option><option selected>2</option><option>3</option></select></div>
@@ -611,6 +663,7 @@
 
   let flatIssues = [];
   let currentIssueIndex = 0;
+  let abbessRows = [];
   async function apiGet(url){
     const r = await fetch(url);
     if(!r.ok) throw new Error(await r.text());
@@ -729,6 +782,52 @@
     return seq[idx];
   }
 
+  function normalizeTimeLabel(label, moment){
+    label = String(label||"").trim();
+    if(!label){
+      if(moment === "AM") return "09:30";
+      if(moment === "PM") return "14:30";
+      return "Flexible";
+    }
+    return label;
+  }
+
+  function timeLabelToMinutes(label, moment){
+    label = String(label||"").trim().toLowerCase();
+    if(["flex","flexible","souple","libre"].includes(label)){
+      return moment === "PM" ? 100000 : 99999;
+    }
+    const m = label.match(/^(\d{1,2}):(\d{2})$/);
+    if(m){
+      return Number(m[1])*60 + Number(m[2]);
+    }
+    if(label.includes("11")) return 11*60;
+    if(label.includes("14")) return 14*60+30;
+    if(label.includes("9")) return 9*60+30;
+    return moment === "PM" ? 100000 : 99999;
+  }
+
+  function taskTimeWindow(task){
+    const moment = (task.moment || "AM").trim();
+    const label = normalizeTimeLabel(task.time_label, moment);
+    const duration = Math.max(1, Number(task.duration_minutes || 60));
+
+    let start = timeLabelToMinutes(label, moment);
+    const isFlexible = start >= 99999;
+
+    if(isFlexible){
+      if(moment === "AM") start = 11*60 + 50 - duration;
+      else if(moment === "PM") start = 16*60 + 50 - duration;
+      else start = 0;
+    }
+
+    return { start, end: start + duration, isFlexible };
+  }
+
+  function overlaps(a, b){
+    return Math.max(a.start, b.start) < Math.min(a.end, b.end);
+  }
+
   function isEligible(sisterId, taskId){
     const m = eligibilityBySister[sisterId];
     if(!m) return true;
@@ -767,9 +866,7 @@
       }
     }
     flatIssues.sort((a,b)=>{
-      const slotA = a.slotKey;
-      const slotB = b.slotKey;
-      if(slotA !== slotB) return slotA.localeCompare(slotB);
+      if(a.slotKey !== b.slotKey) return a.slotKey.localeCompare(b.slotKey);
       return Number(a.taskId) - Number(b.taskId);
     });
     if(currentIssueIndex >= flatIssues.length) currentIssueIndex = 0;
@@ -790,8 +887,7 @@
       pill.innerHTML = `<span class="mini"></span>Aucun problème`;
     }
 
-    const bar = $("#summaryBar");
-    bar.innerHTML = `
+    $("#summaryBar").innerHTML = `
       <span class="summarychip">🟣 Impossibles: ${s.impossible || 0}</span>
       <span class="summarychip">⛔ Conflits: ${s.conflict || 0}</span>
       <span class="summarychip">🔴 Non pourvues: ${s.empty || 0}</span>
@@ -853,6 +949,18 @@
     updateIssuesPill();
   }
 
+  async function loadAbbessForSelectedDay(){
+    const dateISO = $("#absenceDate").value || dateForDay("Mon");
+    try{
+      const res = await apiGet("/api/abbess/" + encodeURIComponent(dateISO));
+      abbessRows = res.rows || [];
+      buildAbbessPrintPage(res);
+    }catch(e){
+      abbessRows = [];
+      buildAbbessPrintPage({ date: dateISO, rows: [] });
+    }
+  }
+
   async function reloadAll(){
     tasks = await apiGet("/api/tasks");
     sisters = await apiGet("/api/sisters");
@@ -877,6 +985,7 @@
     renderFixedAssignments();
     hydrateSelects();
     renderPlanning();
+    await loadAbbessForSelectedDay();
   }
 
   function renderTasks(){
@@ -888,6 +997,8 @@
       tr.innerHTML = `
         <td><strong>${esc(t.name)}</strong>${t.rule?`<div class="hint" title="${esc(t.rule)}">${esc(shorten(t.rule,52))}</div>`:""}</td>
         <td>${esc(t.moment)}</td>
+        <td>${esc(t.time_label || "—")}</td>
+        <td>${Number(t.duration_minutes || 0)} min</td>
         <td>${esc(days)}</td>
         <td>${t.people}</td>
         <td>${esc(t.type)}</td>
@@ -964,6 +1075,7 @@
         }
         await reloadPlanIssues();
         renderPlanning();
+        await loadAbbessForSelectedDay();
       });
       tbody.appendChild(tr);
     }
@@ -1010,6 +1122,7 @@
   async function saveWeek(locked=false){
     await apiPost("/api/plans/" + encodeURIComponent(weekISO()), { planning, locked });
     await reloadPlanIssues();
+    await loadAbbessForSelectedDay();
   }
 
   function generatePlanningSmart(){
@@ -1025,14 +1138,13 @@
       dates[d] = dt.toISOString().slice(0,10);
     });
 
-    const load = {};
-    const loadAM = {};
-    const loadPM = {};
+    const sisterSchedules = {}; // sisterId -> { "Mon-AM":[{start,end,taskId}] }
     sisters.forEach(s=>{
-      load[s.id]=0;
-      loadAM[s.id]=0;
-      loadPM[s.id]=0;
+      sisterSchedules[s.id] = {};
     });
+
+    const totalLoadMinutes = {};
+    sisters.forEach(s=> totalLoadMinutes[s.id] = 0);
 
     const lastAssignedByTask = {};
 
@@ -1046,19 +1158,39 @@
       });
     }
 
-    function pickCandidate(candidates, moment, alreadyInSlot, prevForThisTask){
-      const momentLoad = moment==="AM" ? loadAM : loadPM;
+    function canTakeTask(sisterId, slotKey, task){
+      const taskWindow = taskTimeWindow(task);
+      const arr = sisterSchedules[sisterId][slotKey] || [];
+      return !arr.some(existing => overlaps(taskWindow, existing));
+    }
+
+    function assignTaskToSister(sisterId, slotKey, task){
+      const taskWindow = taskTimeWindow(task);
+      if(!sisterSchedules[sisterId][slotKey]) sisterSchedules[sisterId][slotKey] = [];
+      sisterSchedules[sisterId][slotKey].push({
+        start: taskWindow.start,
+        end: taskWindow.end,
+        taskId: task.id
+      });
+      totalLoadMinutes[sisterId] += Number(task.duration_minutes || 60);
+    }
+
+    function pickCandidate(candidates, slotKey, task, prevForThisTask){
       let best = null;
       let bestScore = 1e9;
 
       for(const s of candidates){
         const sid = s.id;
-        if(alreadyInSlot.has(sid)) continue;
+        if(!canTakeTask(sid, slotKey, task)) continue;
 
         let score = 0;
-        score += load[sid] * 3;
-        score += momentLoad[sid] * 2;
-        if(prevForThisTask && prevForThisTask.includes(sid)) score += 6;
+        score += totalLoadMinutes[sid] * 1.0;
+        if(prevForThisTask && prevForThisTask.includes(sid)) score += 30;
+
+        // petite pénalité pour les tâches flexibles si la sœur est déjà bien chargée
+        const window = taskTimeWindow(task);
+        if(window.isFlexible) score += 10;
+
         score += Math.random() * 0.2;
 
         if(score < bestScore){
@@ -1081,6 +1213,11 @@
           .sort((a,b)=>{
             const typeWeight = x => x.type==="Fixe" ? 0 : x.type==="Périodique" ? 1 : 2;
             if(typeWeight(a)!==typeWeight(b)) return typeWeight(a)-typeWeight(b);
+
+            const wa = taskTimeWindow(a);
+            const wb = taskTimeWindow(b);
+            if(wa.start !== wb.start) return wa.start - wb.start;
+
             return Number(a.prio)-Number(b.prio);
           });
 
@@ -1107,8 +1244,6 @@
           }
         }
 
-        const alreadyInSlot = new Set();
-
         for(const item of planning[slotKey]){
           const t = tasks.find(x=>x.id===item.taskId);
           if(!t) continue;
@@ -1120,32 +1255,29 @@
           const forced = (forcedMap[t.id] || []).filter(Boolean);
           for(const sid of forced){
             if(item.assigned.length >= needed) break;
-            if(alreadyInSlot.has(sid)) continue;
+            if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
+            if(!canTakeTask(sid, slotKey, t)) continue;
             item.assigned.push(sid);
-            alreadyInSlot.add(sid);
+            assignTaskToSister(sid, slotKey, t);
           }
 
           const pref = (prefMap[t.id] || []).filter(Boolean);
           for(const sid of pref){
             if(item.assigned.length >= needed) break;
-            if(alreadyInSlot.has(sid)) continue;
+            if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
+            if(!canTakeTask(sid, slotKey, t)) continue;
             item.assigned.push(sid);
-            alreadyInSlot.add(sid);
+            assignTaskToSister(sid, slotKey, t);
           }
 
           while(item.assigned.length < needed){
-            const sid = pickCandidate(candidates, moment, alreadyInSlot, prevForThisTask);
+            const sid = pickCandidate(candidates, slotKey, t, prevForThisTask);
             if(!sid) break;
+            if(item.assigned.includes(sid)) break;
             item.assigned.push(sid);
-            alreadyInSlot.add(sid);
-          }
-
-          for(const sid of item.assigned){
-            load[sid] += 1;
-            if(moment==="AM") loadAM[sid] += 1;
-            else loadPM[sid] += 1;
+            assignTaskToSister(sid, slotKey, t);
           }
 
           lastAssignedByTask[t.id] = item.assigned.slice();
@@ -1192,6 +1324,8 @@
                 <div class="task-meta">
                   <span class="mini-tag">${esc(t.type)}</span>
                   <span class="mini-tag">${t.people} pers</span>
+                  <span class="mini-tag">${esc(normalizeTimeLabel(t.time_label, t.moment))}</span>
+                  <span class="mini-tag">${Number(t.duration_minutes || 0)} min</span>
                   ${t.rule ? `<span class="mini-tag" title="${esc(t.rule)}">Règle</span>` : ""}
                   ${badge ? badge : ""}
                 </div>
@@ -1260,7 +1394,7 @@
           const rot = rotationLabelForTask(t, weekISO(), day);
           const shownName = rot ? `${t.name} (${rot})` : t.name;
           const who = (it.assigned||[]).map(sid => sisters.find(s=>s.id===sid)?.name).filter(Boolean).join(", ") || "—";
-          html += `<div class="pw-task"><div class="pw-task-name">${esc(shownName)}</div><div class="pw-task-who">${esc(who)}</div></div>`;
+          html += `<div class="pw-task"><div class="pw-task-name">${esc(shownName)} · ${esc(normalizeTimeLabel(t.time_label, t.moment))}</div><div class="pw-task-who">${esc(who)}</div></div>`;
         }
         html += `</td>`;
       }
@@ -1271,6 +1405,30 @@
     $("#printWeek").innerHTML = html;
   }
 
+  function buildAbbessPrintPage(res){
+    const rows = res.rows || [];
+    const dateObj = new Date((res.date || $("#absenceDate").value) + "T00:00:00");
+    const dateFR = dateObj.toLocaleDateString("fr-BE",{year:"numeric",month:"long",day:"numeric"});
+
+    let html = `<div class="ab-title">Feuille Abbesse · ${esc(dateFR)}</div>`;
+
+    if(!rows.length){
+      html += `<div class="ab-row"><div class="ab-name">Aucune affectation</div></div>`;
+      $("#printAbbess").innerHTML = html;
+      return;
+    }
+
+    for(const row of rows){
+      html += `<div class="ab-row"><div class="ab-name">${esc(row.sister_name)}</div>`;
+      for(const t of row.tasks){
+        html += `<div class="ab-task">• ${esc(t.name)} · ${esc(t.moment)} · ${esc(t.time_label || "")}</div>`;
+      }
+      html += `</div>`;
+    }
+
+    $("#printAbbess").innerHTML = html;
+  }
+
   function dailyBlock(dayKey, moment, title){
     const slotKey = `${dayKey}-${moment}`;
     const items = (planning[slotKey]||[]).map(it=>{
@@ -1278,7 +1436,14 @@
       const rot = rotationLabelForTask(t, weekISO(), dayKey);
       const name = rot ? `${t.name} (${rot})` : t.name;
       const who = (it.assigned||[]).map(sid => sisters.find(s=>s.id===sid)?.name).filter(Boolean).join(", ") || "—";
-      return {name, who, rule:t.rule||"", type:t.type, prio:Number(t.prio||2)};
+      return {
+        name,
+        who,
+        rule:t.rule||"",
+        type:t.type,
+        prio:Number(t.prio||2),
+        time_label: normalizeTimeLabel(t.time_label, t.moment)
+      };
     }).filter(Boolean).sort((a,b)=>{
       const w = x => x.type==="Fixe"?0 : x.type==="Périodique"?1 : 2;
       if(w(a)!==w(b)) return w(a)-w(b);
@@ -1288,7 +1453,7 @@
 
     let lines="";
     for(const row of items){
-      lines += `<div class="p-line"><div class="p-task">${esc(row.name)}</div><div class="p-who">${esc(row.who)}</div></div>`;
+      lines += `<div class="p-line"><div class="p-task">${esc(row.name)} · ${esc(row.time_label)}</div><div class="p-who">${esc(row.who)}</div></div>`;
       if(row.rule) lines += `<div class="p-note">Note: ${esc(row.rule)}</div>`;
     }
     if(!lines) lines = `<div class="p-line"><div class="p-task">—</div><div class="p-who">—</div></div>`;
@@ -1331,6 +1496,8 @@
       <span class="mini-tag">${dayNamesFR[day]} · ${moment}</span>
       <span class="mini-tag">Date: ${dateISO}</span>
       <span class="mini-tag">${needed} pers</span>
+      <span class="mini-tag">${esc(normalizeTimeLabel(t.time_label, t.moment))}</span>
+      <span class="mini-tag">${Number(t.duration_minutes || 0)} min</span>
     `;
 
     const candidates = sisters
@@ -1406,6 +1573,8 @@
     $("#taskModalTitle").textContent = task ? "Modifier la tâche" : "Nouvelle tâche";
     $("#taskName").value = task?.name || "";
     $("#taskMoment").value = task?.moment || "AM";
+    $("#taskTimeLabel").value = task?.time_label || "";
+    $("#taskDuration").value = task?.duration_minutes ?? 60;
     $("#taskPeople").value = task?.people ?? 1;
     $("#taskType").value = task?.type || "Fixe";
     $("#taskPrio").value = String(task?.prio ?? 2);
@@ -1419,9 +1588,12 @@
   $("#btnSaveTask").addEventListener("click", async ()=>{
     const name = $("#taskName").value.trim();
     if(!name) return toast("Nom requis");
+
     const payload = {
       name,
       moment: $("#taskMoment").value,
+      time_label: $("#taskTimeLabel").value.trim(),
+      duration_minutes: Number($("#taskDuration").value || 60),
       people: Number($("#taskPeople").value || 1),
       type: $("#taskType").value,
       prio: Number($("#taskPrio").value),
@@ -1473,9 +1645,9 @@
     const activeTasks = tasks.filter(t=>Number(t.active));
     box.innerHTML = activeTasks.map(t=>{
       const checked = (editingSisterSkills[t.id] === undefined) ? true : !!editingSisterSkills[t.id];
-      return `<label style="display:flex;gap:8px;align-items:center;min-width:220px;">
+      return `<label style="display:flex;gap:8px;align-items:center;min-width:240px;">
         <input type="checkbox" data-taskid="${t.id}" ${checked ? "checked" : ""}>
-        <span><strong>${esc(t.name)}</strong> <span style="color:var(--muted);font-weight:900;">(${esc(t.moment)})</span></span>
+        <span><strong>${esc(t.name)}</strong> <span style="color:var(--muted);font-weight:900;">(${esc(t.moment)} · ${esc(normalizeTimeLabel(t.time_label, t.moment))})</span></span>
       </label>`;
     }).join("");
 
@@ -1567,14 +1739,21 @@
   });
 
   $("#btnPdfDay").addEventListener("click", ()=>{
-    document.body.classList.remove("print-weekly");
+    document.body.classList.remove("print-weekly","print-abbess");
     document.body.classList.add("print-daily");
     window.print();
   });
 
   $("#btnPdfWeek").addEventListener("click", ()=>{
-    document.body.classList.remove("print-daily");
+    document.body.classList.remove("print-daily","print-abbess");
     document.body.classList.add("print-weekly");
+    window.print();
+  });
+
+  $("#btnPdfAbbess").addEventListener("click", async ()=>{
+    await loadAbbessForSelectedDay();
+    document.body.classList.remove("print-daily","print-weekly");
+    document.body.classList.add("print-abbess");
     window.print();
   });
 
@@ -1628,6 +1807,7 @@
     await reloadAbsencesForDate($("#absenceDate").value);
     await reloadPlanIssues();
     renderPlanning();
+    await loadAbbessForSelectedDay();
     toast("Absences chargées");
   });
 

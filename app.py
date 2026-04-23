@@ -34,6 +34,68 @@ def slot_date_from_week_and_day(week_monday: str, day_key: str) -> str:
     return add_days(week_monday, offset)
 
 
+def parse_csv(s: str):
+    return [x.strip() for x in (s or "").split(",") if x.strip()]
+
+
+def normalize_time_label(label: str, moment: str) -> str:
+    label = (label or "").strip()
+    if not label:
+        return "09:30" if moment == "AM" else "14:30" if moment == "PM" else "Flexible"
+    return label
+
+
+def time_label_to_minutes(label: str, moment: str) -> int:
+    label = (label or "").strip().lower()
+
+    if label in ("flex", "flexible", "souple", "libre"):
+        return 100000 if moment == "PM" else 99999
+
+    try:
+        hh, mm = label.split(":")
+        return int(hh) * 60 + int(mm)
+    except Exception:
+        if "11" in label:
+            return 11 * 60
+        if "14" in label:
+            return 14 * 60 + 30
+        if "9" in label:
+            return 9 * 60 + 30
+        return 100000 if moment == "PM" else 99999
+
+
+def task_time_window(task_row):
+    """
+    Retourne (start_min, end_min, is_flexible)
+    Flexible = placé en fin de demi-journée pour ne pas bloquer le reste.
+    """
+    moment = (task_row["moment"] or "AM").strip()
+    label = normalize_time_label(task_row["time_label"], moment)
+    duration = int(task_row["duration_minutes"] or 60)
+
+    start = time_label_to_minutes(label, moment)
+    is_flexible = start >= 99999
+
+    if is_flexible:
+        if moment == "AM":
+            start = 11 * 60 + 50 - duration
+        elif moment == "PM":
+            start = 16 * 60 + 50 - duration
+        else:
+            start = 0
+
+    end = start + duration
+    return start, end, is_flexible
+
+
+def intervals_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    return max(a_start, b_start) < min(a_end, b_end)
+
+
+def sister_absent(abs_rows, date_iso: str, moment: str, sister_id: int) -> bool:
+    return ((date_iso, moment, sister_id) in abs_rows) or ((date_iso, "Journée", sister_id) in abs_rows)
+
+
 @app.get("/")
 def home():
     return render_template("index.html")
@@ -44,7 +106,8 @@ def home():
 def list_tasks():
     conn = get_conn()
     rows = conn.execute("""
-        SELECT id, name, moment, days, people, type, prio, active, rule
+        SELECT id, name, moment, days, people, type, prio, active, rule,
+               time_label, duration_minutes
         FROM tasks
         ORDER BY active DESC, prio ASC, name ASC
     """).fetchall()
@@ -56,23 +119,30 @@ def list_tasks():
 def create_task():
     data = request.get_json(force=True)
 
+    name = data.get("name", "").strip()
+    moment = data.get("moment", "AM")
+    days = ",".join(data.get("days", []))
+    people = int(data.get("people", 1))
+    task_type = data.get("type", "Fixe")
+    prio = int(data.get("prio", 2))
+    active = 1 if data.get("active", True) else 0
+    rule = data.get("rule", "").strip()
+    time_label = normalize_time_label(data.get("time_label", ""), moment)
+    duration_minutes = max(1, int(data.get("duration_minutes", 60)))
+
     conn = get_conn()
     cur = conn.execute("""
-        INSERT INTO tasks(name, moment, days, people, type, prio, active, rule)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks(
+            name, moment, days, people, type, prio, active, rule,
+            time_label, duration_minutes
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        data.get("name", "").strip(),
-        data.get("moment", "AM"),
-        ",".join(data.get("days", [])),
-        int(data.get("people", 1)),
-        data.get("type", "Fixe"),
-        int(data.get("prio", 2)),
-        1 if data.get("active", True) else 0,
-        data.get("rule", "").strip(),
+        name, moment, days, people, task_type, prio, active, rule,
+        time_label, duration_minutes
     ))
     task_id = cur.lastrowid
 
-    # La nouvelle tâche devient autorisée par défaut pour toutes les sœurs existantes
     sisters = conn.execute("SELECT id FROM sisters").fetchall()
     for s in sisters:
         conn.execute("""
@@ -89,21 +159,26 @@ def create_task():
 def update_task(task_id: int):
     data = request.get_json(force=True)
 
+    name = data.get("name", "").strip()
+    moment = data.get("moment", "AM")
+    days = ",".join(data.get("days", []))
+    people = int(data.get("people", 1))
+    task_type = data.get("type", "Fixe")
+    prio = int(data.get("prio", 2))
+    active = 1 if data.get("active", True) else 0
+    rule = data.get("rule", "").strip()
+    time_label = normalize_time_label(data.get("time_label", ""), moment)
+    duration_minutes = max(1, int(data.get("duration_minutes", 60)))
+
     conn = get_conn()
     conn.execute("""
         UPDATE tasks
-        SET name=?, moment=?, days=?, people=?, type=?, prio=?, active=?, rule=?
+        SET name=?, moment=?, days=?, people=?, type=?, prio=?, active=?, rule=?,
+            time_label=?, duration_minutes=?
         WHERE id=?
     """, (
-        data.get("name", "").strip(),
-        data.get("moment", "AM"),
-        ",".join(data.get("days", [])),
-        int(data.get("people", 1)),
-        data.get("type", "Fixe"),
-        int(data.get("prio", 2)),
-        1 if data.get("active", True) else 0,
-        data.get("rule", "").strip(),
-        task_id
+        name, moment, days, people, task_type, prio, active, rule,
+        time_label, duration_minutes, task_id
     ))
     conn.commit()
     conn.close()
@@ -149,7 +224,6 @@ def create_sister():
     ))
     sid = cur.lastrowid
 
-    # Toutes les tâches existantes sont autorisées par défaut pour la nouvelle sœur
     task_rows = conn.execute("SELECT id FROM tasks").fetchall()
     for tr in task_rows:
         conn.execute("""
@@ -496,14 +570,11 @@ def clone_plan_next(week: str):
 @app.get("/api/plans/<week>/check")
 def check_plan(week: str):
     """
-    Retourne:
-    - issues par case (Mon-AM etc.)
-    - résumé global en haut
-    - distinction entre:
-      * impossible
-      * conflict
-      * empty
-      * partial
+    Distinctions:
+    - impossible: structurellement infaisable (pas assez de soeurs possibles)
+    - conflict: affectation incohérente (absence / incompétence / chevauchement)
+    - empty: aucune sœur affectée
+    - partial: pas assez de sœurs affectées
     """
     conn = get_conn()
 
@@ -526,52 +597,61 @@ def check_plan(week: str):
 
     plan_id = plan["id"]
 
-    # tâches
     task_rows = conn.execute("""
-        SELECT id, people, active
+        SELECT id, name, people, active, moment, time_label, duration_minutes
         FROM tasks
     """).fetchall()
-    people_by_task = {int(r["id"]): int(r["people"]) for r in task_rows}
+    tasks_by_id = {int(r["id"]): r for r in task_rows}
     active_task_ids = {int(r["id"]) for r in task_rows if int(r["active"]) == 1}
 
-    # items du plan
     items = conn.execute("""
         SELECT day, moment, task_id, sister_ids
         FROM plan_items
         WHERE plan_id=?
     """, (plan_id,)).fetchall()
 
-    # absences de la semaine
     week_start = week
     week_end = add_days(week, 6)
 
-    abs_rows = conn.execute("""
+    abs_rows_raw = conn.execute("""
         SELECT sister_id, date, moment
         FROM absences
         WHERE date >= ? AND date <= ?
     """, (week_start, week_end)).fetchall()
 
-    absent = {(r["date"], r["moment"], int(r["sister_id"])) for r in abs_rows}
-    weekly_absence_count = len(abs_rows)
+    abs_rows = {(r["date"], r["moment"], int(r["sister_id"])) for r in abs_rows_raw}
+    weekly_absence_count = len(abs_rows_raw)
 
-    # eligibility
     elig_rows = conn.execute("""
         SELECT sister_id, task_id, allowed
         FROM eligibility
     """).fetchall()
-
     allowed_map = {}
     for r in elig_rows:
         sid = int(r["sister_id"])
         tid = int(r["task_id"])
         allowed_map[(sid, tid)] = int(r["allowed"]) == 1
 
-    # sœurs actives
     sister_rows = conn.execute("""
         SELECT id, active
         FROM sisters
     """).fetchall()
     active_sisters = {int(r["id"]) for r in sister_rows if int(r["active"]) == 1}
+
+    # occupation d’une sœur par slot pour détecter les chevauchements
+    occupancy = {}  # (day, moment, sister_id) -> list[(task_id, start, end)]
+    for r in items:
+        day = r["day"]
+        moment = r["moment"]
+        task_id = int(r["task_id"])
+        task = tasks_by_id.get(task_id)
+        if not task:
+            continue
+        start, end, _ = task_time_window(task)
+        assigned = [int(x) for x in (r["sister_ids"] or "").split(",") if x.strip().isdigit()]
+        for sid in assigned:
+            key = (day, moment, sid)
+            occupancy.setdefault(key, []).append((task_id, start, end))
 
     issues = {}
     summary = {
@@ -584,38 +664,44 @@ def check_plan(week: str):
         "total_problems": 0,
     }
 
-    # Pour savoir si une tâche est "impossible", on regarde si le réservoir maximal
-    # de sœurs possibles pour ce créneau est inférieur au nombre attendu.
     for r in items:
         day = r["day"]
         moment = r["moment"]
         task_id = int(r["task_id"])
-
         if task_id not in active_task_ids:
             continue
 
-        expected = people_by_task.get(task_id, 1)
+        task = tasks_by_id[task_id]
+        expected = int(task["people"] or 1)
+        start, end, _ = task_time_window(task)
         assigned = [int(x) for x in (r["sister_ids"] or "").split(",") if x.strip().isdigit()]
         assigned_n = len(assigned)
 
         slot_date = slot_date_from_week_and_day(week, day)
 
-        # sœurs potentiellement possibles pour CETTE tâche et CE créneau
         possible_candidates = []
         for sid in active_sisters:
             is_allowed = allowed_map.get((sid, task_id), True)
             if not is_allowed:
                 continue
 
-            absent_for_slot = ((slot_date, moment, sid) in absent) or ((slot_date, "Journée", sid) in absent)
-            if absent_for_slot:
+            if sister_absent(abs_rows, slot_date, moment, sid):
                 continue
 
-            possible_candidates.append(sid)
+            # vérifier chevauchement avec tâches déjà affectées à cette sœur dans ce créneau
+            overlaps = False
+            for other_task_id, o_start, o_end in occupancy.get((day, moment, sid), []):
+                if other_task_id == task_id:
+                    continue
+                if intervals_overlap(start, end, o_start, o_end):
+                    overlaps = True
+                    break
+
+            if not overlaps:
+                possible_candidates.append(sid)
 
         max_possible = len(possible_candidates)
 
-        # conflit = affectation incohérente
         has_conflict = False
         for sid in assigned:
             if sid not in active_sisters:
@@ -627,14 +713,21 @@ def check_plan(week: str):
                 has_conflict = True
                 break
 
-            absent_for_slot = ((slot_date, moment, sid) in absent) or ((slot_date, "Journée", sid) in absent)
-            if absent_for_slot:
+            if sister_absent(abs_rows, slot_date, moment, sid):
                 has_conflict = True
                 break
 
-        status = None
+            # chevauchement réel
+            for other_task_id, o_start, o_end in occupancy.get((day, moment, sid), []):
+                if other_task_id == task_id:
+                    continue
+                if intervals_overlap(start, end, o_start, o_end):
+                    has_conflict = True
+                    break
+            if has_conflict:
+                break
 
-        # ordre d'importance
+        status = None
         if max_possible < expected:
             status = "impossible"
         elif has_conflict:
@@ -646,10 +739,7 @@ def check_plan(week: str):
 
         if status:
             slot_key = f"{day}-{moment}"
-            if slot_key not in issues:
-                issues[slot_key] = []
-
-            issues[slot_key].append({
+            issues.setdefault(slot_key, []).append({
                 "taskId": task_id,
                 "status": status,
                 "expected": expected,
@@ -677,6 +767,95 @@ def check_plan(week: str):
     })
 
 
+# ----------------- ABBESS DAILY VIEW -----------------
+@app.get("/api/abbess/<date_iso>")
+def abbess_daily_view(date_iso: str):
+    """
+    Donne une vue "par soeur" pour un jour donné:
+    [
+      {
+        sister_id: 1,
+        sister_name: "Sr Pascale",
+        tasks: [
+          {"name":"Réfectoire", "moment":"AM", "time_label":"09:30"},
+          {"name":"Vaisselle", "moment":"AM", "time_label":"11:00"}
+        ]
+      }
+    ]
+    """
+    dt = datetime.strptime(date_iso, "%Y-%m-%d")
+    monday = dt - timedelta(days=dt.weekday())
+    week = monday.strftime("%Y-%m-%d")
+    day_key = list(DAY_TO_OFFSET.keys())[dt.weekday()]
+
+    conn = get_conn()
+
+    plan = conn.execute("SELECT id FROM plans WHERE week=?", (week,)).fetchone()
+    if not plan:
+        conn.close()
+        return jsonify({
+            "date": date_iso,
+            "week": week,
+            "day": day_key,
+            "rows": []
+        })
+
+    items = conn.execute("""
+        SELECT pi.moment, pi.task_id, pi.sister_ids,
+               t.name, t.time_label, t.duration_minutes, t.type, t.prio
+        FROM plan_items pi
+        JOIN tasks t ON t.id = pi.task_id
+        WHERE pi.plan_id=? AND pi.day=?
+        ORDER BY pi.moment ASC, t.prio ASC, t.name ASC
+    """, (plan["id"], day_key)).fetchall()
+
+    sisters = conn.execute("""
+        SELECT id, name
+        FROM sisters
+        WHERE active=1
+        ORDER BY name ASC
+    """).fetchall()
+    sister_name = {int(s["id"]): s["name"] for s in sisters}
+
+    rows_by_sister = {}
+
+    for r in items:
+        sister_ids = [int(x) for x in (r["sister_ids"] or "").split(",") if x.strip().isdigit()]
+        for sid in sister_ids:
+            rows_by_sister.setdefault(sid, [])
+            rows_by_sister[sid].append({
+                "name": r["name"],
+                "moment": r["moment"],
+                "time_label": r["time_label"],
+                "duration_minutes": int(r["duration_minutes"] or 60),
+                "type": r["type"],
+                "prio": int(r["prio"] or 2),
+            })
+
+    out_rows = []
+    for sid in sorted(rows_by_sister.keys(), key=lambda x: sister_name.get(x, "").lower()):
+        tasks_for_sister = rows_by_sister[sid]
+        tasks_for_sister.sort(key=lambda x: (
+            x["moment"],
+            time_label_to_minutes(x["time_label"], x["moment"]),
+            x["prio"],
+            x["name"].lower(),
+        ))
+        out_rows.append({
+            "sister_id": sid,
+            "sister_name": sister_name.get(sid, f"Sœur {sid}"),
+            "tasks": tasks_for_sister
+        })
+
+    conn.close()
+    return jsonify({
+        "date": date_iso,
+        "week": week,
+        "day": day_key,
+        "rows": out_rows
+    })
+
+
 # ----------------- HEALTH -----------------
 @app.get("/api/health")
 def health():
@@ -684,5 +863,4 @@ def health():
 
 
 if __name__ == "__main__":
-    init_db()
     app.run(host="127.0.0.1", port=5000, debug=True)

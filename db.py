@@ -1,3 +1,4 @@
+# db.py
 import os
 import sqlite3
 from pathlib import Path
@@ -30,15 +31,17 @@ def init_db() -> None:
 
     -- ---------------- TASKS ----------------
     CREATE TABLE IF NOT EXISTS tasks (
-      id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      name    TEXT NOT NULL,
-      moment  TEXT NOT NULL,          -- AM, PM, AM+PM
-      days    TEXT NOT NULL,          -- "Mon,Tue,Wed"
-      people  INTEGER NOT NULL DEFAULT 1,
-      type    TEXT NOT NULL DEFAULT 'Fixe',
-      prio    INTEGER NOT NULL DEFAULT 2,
-      active  INTEGER NOT NULL DEFAULT 1,
-      rule    TEXT NOT NULL DEFAULT ''
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      name              TEXT NOT NULL,
+      moment            TEXT NOT NULL,          -- AM, PM, AM+PM
+      days              TEXT NOT NULL,          -- "Mon,Tue,Wed"
+      people            INTEGER NOT NULL DEFAULT 1,
+      type              TEXT NOT NULL DEFAULT 'Fixe',
+      prio              INTEGER NOT NULL DEFAULT 2,
+      active            INTEGER NOT NULL DEFAULT 1,
+      rule              TEXT NOT NULL DEFAULT '',
+      time_label        TEXT NOT NULL DEFAULT '',     -- ex: "09:30", "11:00", "Flexible"
+      duration_minutes  INTEGER NOT NULL DEFAULT 60  -- durée estimée
     );
 
     -- ---------------- SISTERS ----------------
@@ -126,19 +129,102 @@ def init_db() -> None:
 
     CREATE INDEX IF NOT EXISTS idx_eligibility_task
       ON eligibility(task_id);
+
+    CREATE INDEX IF NOT EXISTS idx_tasks_active
+      ON tasks(active);
+
+    CREATE INDEX IF NOT EXISTS idx_tasks_moment
+      ON tasks(moment);
     """)
 
     # ---------------- MIGRATIONS SÛRES ----------------
-    # Pour les anciennes bases qui n'auraient pas toutes les colonnes
     _ensure_column(conn, "tasks", "people", "INTEGER NOT NULL DEFAULT 1")
     _ensure_column(conn, "tasks", "type", "TEXT NOT NULL DEFAULT 'Fixe'")
     _ensure_column(conn, "tasks", "prio", "INTEGER NOT NULL DEFAULT 2")
     _ensure_column(conn, "tasks", "active", "INTEGER NOT NULL DEFAULT 1")
     _ensure_column(conn, "tasks", "rule", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(conn, "tasks", "time_label", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(conn, "tasks", "duration_minutes", "INTEGER NOT NULL DEFAULT 60")
     _ensure_column(conn, "sisters", "restr", "TEXT NOT NULL DEFAULT '—'")
 
+    # ---------------- NORMALISATION DES DONNÉES EXISTANTES ----------------
+    # Si anciennes tâches sans heure, on met un repère simple selon le nom / moment
+    task_rows = conn.execute("""
+        SELECT id, name, moment, time_label, duration_minutes
+        FROM tasks
+    """).fetchall()
+
+    for t in task_rows:
+        task_id = int(t["id"])
+        name = (t["name"] or "").strip().lower()
+        moment = (t["moment"] or "AM").strip()
+        time_label = (t["time_label"] or "").strip()
+        duration = int(t["duration_minutes"] or 0)
+
+        # heure par défaut si vide
+        if not time_label:
+            guessed_time = "Flexible"
+
+            if "9h30" in name or "09:30" in name:
+                guessed_time = "09:30"
+            elif "11h" in name or "11:00" in name:
+                guessed_time = "11:00"
+            elif "11h50" in name or "11:50" in name:
+                guessed_time = "11:50"
+            elif "14h30" in name or "14:30" in name:
+                guessed_time = "14:30"
+            elif "16h50" in name or "16:50" in name:
+                guessed_time = "16:50"
+            else:
+                if moment == "AM":
+                    guessed_time = "09:30"
+                elif moment == "PM":
+                    guessed_time = "14:30"
+                elif moment == "AM+PM":
+                    guessed_time = "Flexible"
+
+            conn.execute("""
+                UPDATE tasks
+                SET time_label=?
+                WHERE id=?
+            """, (guessed_time, task_id))
+
+        # durée par défaut si vide / nulle
+        if duration <= 0:
+            guessed_duration = 60
+
+            if "vaisselle" in name:
+                guessed_duration = 30
+            elif "réfectoire" in name or "refectoire" in name:
+                guessed_duration = 60
+            elif "légumes" in name or "legumes" in name:
+                guessed_duration = 120
+            elif "plats" in name:
+                guessed_duration = 45
+            elif "écoute" in name or "ecoute" in name:
+                guessed_duration = 120
+            elif "tables" in name:
+                guessed_duration = 120
+            elif "buanderie" in name or "repassage" in name or "pliage" in name:
+                guessed_duration = 90
+            elif "tunique" in name:
+                guessed_duration = 120
+            elif "pain" in name:
+                guessed_duration = 45
+            elif "humidification" in name:
+                guessed_duration = 30
+            elif "cuisson" in name or "cuisinière" in name or "cuisiniere" in name:
+                guessed_duration = 120
+            elif "coupe pain" in name:
+                guessed_duration = 45
+
+            conn.execute("""
+                UPDATE tasks
+                SET duration_minutes=?
+                WHERE id=?
+            """, (guessed_duration, task_id))
+
     # ---------------- AUTO-RÉPARATION ELIGIBILITY ----------------
-    # 1) chaque sœur doit avoir une ligne par tâche
     sisters = conn.execute("SELECT id FROM sisters").fetchall()
     tasks = conn.execute("SELECT id FROM tasks").fetchall()
 
