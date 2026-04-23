@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 from db import init_db, get_conn
 
 app = Flask(__name__)
-from db import init_db
-
 init_db()
 
 
