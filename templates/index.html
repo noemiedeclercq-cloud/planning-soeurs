@@ -1,0 +1,1654 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planning des tâches</title>
+<style>
+  :root{
+    --bg:#f7f7fb; --card:#fff; --text:#1f2430; --muted:#6b7280;
+    --line:#e6e8ef; --accent:#3b82f6; --accent2:#10b981; --warn:#f59e0b;
+    --shadow:0 10px 30px rgba(0,0,0,.06); --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color:var(--text);
+    background:linear-gradient(180deg,#f7f7fb 0%,#f3f6ff 100%);
+  }
+  .topbar{
+    position:sticky;top:0;z-index:20;background:rgba(255,255,255,.85);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1600px;margin:0 auto;padding:14px 16px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
+  .brand .logo{
+    width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
+    background:#eef2ff;border:1px solid var(--line);
+  }
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-left:10px;}
+  .tab{
+    padding:8px 12px;border-radius:999px;border:1px solid transparent;
+    color:var(--muted);font-weight:800;font-size:13px;cursor:pointer;user-select:none;
+  }
+  .tab.active{background:#eef2ff;border-color:#dbeafe;color:#1d4ed8}
+  .spacer{flex:1}
+  main{max-width:1600px;margin:18px auto 80px;padding:0 16px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);
+  }
+  .card-head{
+    padding:14px 14px 10px;display:flex;align-items:center;gap:10px;
+    flex-wrap:wrap;border-bottom:1px solid var(--line);
+  }
+  .card-head h2{margin:0;font-size:14px;}
+  .card-body{padding:14px;}
+  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .select,.input{
+    border:1px solid var(--line);border-radius:12px;background:#fff;
+    padding:10px 12px;font-size:13px;color:var(--text);outline:none;
+  }
+  .btn{
+    border:1px solid transparent;padding:10px 12px;border-radius:12px;
+    font-weight:900;font-size:13px;cursor:pointer;background:#f3f4f6;
+    color:var(--text);user-select:none;
+  }
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.green{background:var(--accent2);color:#fff}
+  .btn.warn{background:var(--warn);color:#111827}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;padding:8px 10px;
+    border-radius:999px;border:1px solid var(--line);background:#fff;
+    color:var(--muted);font-size:12px;font-weight:900;
+  }
+  .pill .mini{width:8px;height:8px;border-radius:999px;background:#cbd5e1;}
+  .pill.locked .mini{background:var(--warn)}
+  .pill.ok .mini{background:var(--accent2)}
+
+  .pill.issues-ok .mini{ background:#10b981; }
+  .pill.issues-warn .mini{ background:#f59e0b; }
+  .pill.issues-bad .mini{ background:#ef4444; }
+
+  #issuesPill{cursor:pointer}
+
+  .planning-wrap{overflow-x:hidden; overflow-y:auto;}
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:0;
+    table-layout:fixed;
+  }
+  thead th{
+    position:sticky;top:0;background:#fbfcff;z-index:1;
+    font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
+  }
+  th,td{
+    border-bottom:1px solid var(--line);
+    border-right:1px solid var(--line);
+    padding:10px;vertical-align:top;
+  }
+  th:first-child,td:first-child{border-left:1px solid var(--line);}
+  .slot{display:flex;flex-direction:column;gap:8px;min-height:170px;}
+  .slot-title{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:6px 8px;border-radius:12px;background:#f8fafc;border:1px dashed #e2e8f0;
+    color:var(--muted);font-size:12px;font-weight:900;
+  }
+  .task{
+    border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;
+    scroll-margin-top:120px;
+  }
+  .task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .task-name{font-weight:900;font-size:13px;line-height:1.2;}
+  .task-meta{margin-top:4px;color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap;}
+  .mini-tag{
+    font-size:11px;padding:4px 8px;border-radius:999px;background:#f3f4f6;
+    border:1px solid var(--line);color:var(--muted);font-weight:900;
+  }
+  .assigned{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    padding:6px 8px;border-radius:999px;border:1px solid var(--line);
+    background:#fbfcff;font-size:12px;font-weight:900;
+  }
+  .table-wrap{border:1px solid var(--line);border-radius:14px;overflow:auto;background:#fff;}
+  .datatable{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;}
+  .datatable th,.datatable td{
+    padding:10px;border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);font-size:13px;
+  }
+  .datatable th{
+    background:#fbfcff;color:var(--muted);font-size:12px;
+    text-transform:uppercase;letter-spacing:.6px;
+  }
+  .datatable tr td:last-child,.datatable tr th:last-child{border-right:none}
+  .datatable tr:last-child td{border-bottom:none}
+  .actions{display:flex;gap:8px;justify-content:flex-end;}
+  .iconbtn{
+    border:1px solid var(--line);background:#fff;border-radius:12px;
+    padding:7px 9px;cursor:pointer;font-weight:900;color:#334155;
+  }
+  .iconbtn:hover{background:#f8fafc}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px;width:100%;}
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
+    align-items:center;justify-content:center;padding:18px;z-index:50;
+  }
+  .modal-backdrop.active{display:flex}
+  .modal{
+    width:min(860px,100%);border-radius:18px;background:#fff;border:1px solid var(--line);
+    box-shadow:0 30px 90px rgba(0,0,0,.22);overflow:hidden;
+  }
+  .modal-head{
+    padding:14px;display:flex;align-items:center;justify-content:space-between;
+    gap:10px;border-bottom:1px solid var(--line);background:#fbfcff;
+  }
+  .modal-head h3{margin:0;font-size:14px}
+  .modal-body{padding:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:720px){
+    .grid{grid-template-columns:1fr}
+    .tabs{display:none}
+    table{min-width:900px}
+  }
+  label{
+    display:block;font-size:12px;color:var(--muted);font-weight:900;
+    margin-bottom:6px;letter-spacing:.2px;
+  }
+  .field{display:flex;flex-direction:column}
+  .rowline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .checkboxes{
+    display:flex;flex-wrap:wrap;gap:10px;padding:10px;border:1px solid var(--line);
+    border-radius:12px;background:#fff;
+  }
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#111827;
+    color:#fff;padding:10px 12px;border-radius:999px;font-weight:900;font-size:13px;
+    display:none;z-index:60;box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .toast.active{display:block}
+
+  .task.task-empty{ border:2px solid #fca5a5 !important; background:#fff1f2 !important; }
+  .task.task-partial{ border:2px solid #fdba74 !important; background:#fff7ed !important; }
+  .task.task-conflict{ border:2px solid #ef4444 !important; background:#fee2e2 !important; }
+  .task.task-impossible{ border:2px solid #8b5cf6 !important; background:#f5f3ff !important; }
+
+  .badge-warn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;
+    background:#fff;border:1px solid var(--line);color:var(--text);white-space:nowrap;
+  }
+  .badge-warn.red{ border-color:#fca5a5; }
+  .badge-warn.orange{ border-color:#fdba74; }
+  .badge-warn.darkred{ border-color:#ef4444; }
+  .badge-warn.purple{ border-color:#8b5cf6; }
+
+  .legend{
+    display:flex;gap:10px;flex-wrap:wrap;width:100%;margin-top:4px;
+  }
+  .legend-item{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:var(--muted);
+  }
+  .legend-dot{
+    width:10px;height:10px;border-radius:999px;display:inline-block;
+  }
+  .legend-dot.empty{background:#fca5a5}
+  .legend-dot.partial{background:#fdba74}
+  .legend-dot.conflict{background:#ef4444}
+  .legend-dot.impossible{background:#8b5cf6}
+
+  .summarybar{
+    display:flex;gap:8px;flex-wrap:wrap;width:100%;
+  }
+  .summarychip{
+    display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;
+    border:1px solid var(--line);background:#fff;font-size:12px;font-weight:900;color:var(--muted);
+  }
+
+  .task.jump-highlight{
+    box-shadow:0 0 0 4px rgba(59,130,246,.35);
+    transition:box-shadow .2s ease;
+  }
+
+  #printDaily,#printWeek{display:none;}
+
+  @media print{
+    .topbar, #tabs, .toast{display:none!important}
+    main{margin:0!important;padding:0!important}
+    #page-planning .card-head, .planning-wrap{display:none!important}
+    #page-planning .card{box-shadow:none!important;border:none!important}
+
+    body.print-daily #printDaily{display:block!important;padding:18px 22px}
+    body.print-weekly #printWeek{display:block!important;padding:12px 14px}
+
+    .p-day{page-break-after:always}
+    .p-day:last-child{page-break-after:auto}
+    .p-header{
+      display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+      border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:12px
+    }
+    .p-title{font-size:18px;font-weight:900;margin:0}
+    .p-date{font-size:13px;font-weight:900;margin:0;color:#111827}
+    .p-week{font-size:11px;margin:0;color:#374151;font-weight:800}
+    .p-block{margin-top:12px;border:1px solid #cfd5e3;border-radius:12px;padding:10px 12px}
+    .p-block h3{margin:0 0 8px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.6px}
+    .p-line{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px dashed #dbe2f2;font-size:12px}
+    .p-line:first-of-type{border-top:none}
+    .p-task{width:55%;font-weight:900}
+    .p-who{width:45%;font-weight:900;color:#111827}
+    .p-note{font-size:10px;color:#374151;font-weight:800;margin-top:6px}
+
+    @page {
+      size: A4 landscape;
+      margin: 8mm;
+    }
+    .pw-title{
+      font-size:18px;font-weight:900;margin:0 0 10px 0;
+    }
+    .pw-table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:10px;
+    }
+    .pw-table th,.pw-table td{
+      border:1px solid #cfd5e3;
+      vertical-align:top;
+      padding:6px;
+    }
+    .pw-slot{font-weight:900;background:#f8fafc}
+    .pw-task{margin-bottom:6px;padding-bottom:4px;border-bottom:1px dashed #dbe2f2}
+    .pw-task:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .pw-task-name{font-weight:900}
+    .pw-task-who{color:#111827}
+  }
+</style>
+</head>
+
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><div class="logo">🕊️</div><div>Planning des tâches</div></div>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-page="planning">Planning</div>
+      <div class="tab" data-page="tasks">Tâches</div>
+      <div class="tab" data-page="sisters">Sœurs</div>
+      <div class="tab" data-page="absences">Absences</div>
+      <div class="tab" data-page="assignments">Affectations fixes</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<main>
+  <!-- PLANNING -->
+  <section class="page active" id="page-planning">
+    <div class="card">
+      <div class="card-head">
+        <h2>Planning</h2>
+        <div class="spacer"></div>
+        <div class="controls">
+          <input class="input" type="date" id="weekSelect" />
+          <button class="btn primary" id="btnGenerate">Générer</button>
+          <button class="btn" id="btnSaveWeek">💾 Sauver semaine</button>
+          <button class="btn" id="btnCloneNext">📄 Dupliquer → semaine suivante</button>
+          <button class="btn warn" id="btnLock">🔒 Verrouiller</button>
+          <button class="btn ghost" id="btnUnlock">🔓 Déverrouiller</button>
+          <button class="btn ghost" id="btnPdfDay">🖨️ PDF jour</button>
+          <button class="btn ghost" id="btnPdfWeek">🗓️ PDF semaine</button>
+
+          <span class="pill ok" id="lockPill"><span class="mini"></span>Déverrouillé</span>
+          <span class="pill issues-ok" id="issuesPill"><span class="mini"></span>Aucun problème</span>
+        </div>
+
+        <div class="summarybar" id="summaryBar">
+          <span class="summarychip">Absences semaine: 0</span>
+        </div>
+
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot empty"></span>Non pourvue</span>
+          <span class="legend-item"><span class="legend-dot partial"></span>Incomplète</span>
+          <span class="legend-item"><span class="legend-dot conflict"></span>Conflit</span>
+          <span class="legend-item"><span class="legend-dot impossible"></span>Impossible</span>
+        </div>
+
+        <div class="hint">Génération intelligente: respecte absences + affectations fixes + compétences des sœurs. Les tâches flexibles comme la buanderie passent après les tâches prioritaires, seulement s’il reste du monde.</div>
+      </div>
+
+      <div class="card-body planning-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:110px;">Créneau</th>
+              <th>Lundi</th><th>Mardi</th><th>Mercredi</th><th>Jeudi</th><th>Vendredi</th><th>Samedi</th><th>Dimanche</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div style="font-weight:900;">AM</div><div style="color:var(--muted);font-size:12px;font-weight:900;">09h30–11h50</div></td>
+              <td><div class="slot" id="slot-Mon-AM"></div></td>
+              <td><div class="slot" id="slot-Tue-AM"></div></td>
+              <td><div class="slot" id="slot-Wed-AM"></div></td>
+              <td><div class="slot" id="slot-Thu-AM"></div></td>
+              <td><div class="slot" id="slot-Fri-AM"></div></td>
+              <td><div class="slot" id="slot-Sat-AM"></div></td>
+              <td><div class="slot" id="slot-Sun-AM"></div></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:900;">PM</div><div style="color:var(--muted);font-size:12px;font-weight:900;">14h30–16h50</div></td>
+              <td><div class="slot" id="slot-Mon-PM"></div></td>
+              <td><div class="slot" id="slot-Tue-PM"></div></td>
+              <td><div class="slot" id="slot-Wed-PM"></div></td>
+              <td><div class="slot" id="slot-Thu-PM"></div></td>
+              <td><div class="slot" id="slot-Fri-PM"></div></td>
+              <td><div class="slot" id="slot-Sat-PM"></div></td>
+              <td><div class="slot" id="slot-Sun-PM"></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="printDaily"></div>
+      <div id="printWeek"></div>
+    </div>
+  </section>
+
+  <!-- TASKS -->
+  <section class="page" id="page-tasks">
+    <div class="card">
+      <div class="card-head">
+        <h2>Tâches</h2>
+        <div class="spacer"></div>
+        <button class="btn green" id="btnNewTask">+ Nouvelle tâche</button>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="datatable" id="tasksTable">
+            <thead>
+              <tr>
+                <th>Nom</th><th>AM/PM</th><th>Jours</th><th>Pers</th><th>Type</th><th>Prio</th><th>Actif</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="hint">Astuce: tu peux ajouter une rotation dans “Règle” (ex: <code>rotation:biscuits,cake,biscuits,cramique; days:Tue,Thu</code>).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SISTERS -->
+  <section class="page" id="page-sisters">
+    <div class="card">
+      <div class="card-head">
+        <h2>Sœurs</h2>
+        <div class="spacer"></div>
+        <button class="btn green" id="btnNewSister">+ Nouvelle sœur</button>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="datatable" id="sistersTable">
+            <thead><tr><th>Nom</th><th>Active</th><th>Restrictions</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="hint">Dans la fiche d’une sœur, tu peux cocher les tâches qu’elle sait faire.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABSENCES -->
+  <section class="page" id="page-absences">
+    <div class="card">
+      <div class="card-head">
+        <h2>Absences</h2>
+        <div class="spacer"></div>
+        <div class="controls">
+          <input class="input" type="date" id="absenceDate" />
+          <button class="btn green" id="btnNewAbsence">+ Ajouter</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="datatable" id="absencesTable">
+            <thead><tr><th>Sœur</th><th>Date</th><th>AM/PM</th><th>Motif</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIXED ASSIGNMENTS -->
+  <section class="page" id="page-assignments">
+    <div class="card">
+      <div class="card-head">
+        <h2>Affectations fixes</h2>
+        <div class="spacer"></div>
+        <button class="btn green" id="btnNewAssign">+ Nouvelle affectation</button>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="datatable" id="assignTable">
+            <thead><tr><th>Sœur</th><th>Tâche</th><th>Jours</th><th>AM/PM</th><th>Début</th><th>Fin</th><th>Type</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- MODALS: TASK -->
+<div class="modal-backdrop" id="modalTask">
+  <div class="modal">
+    <div class="modal-head"><h3 id="taskModalTitle">Nouvelle tâche</h3><button class="btn ghost" id="btnCloseTask">Fermer</button></div>
+    <div class="modal-body">
+      <div class="grid">
+        <div class="field"><label>Nom</label><input class="input" id="taskName" /></div>
+        <div class="field"><label>AM/PM</label>
+          <select class="select" id="taskMoment"><option>AM</option><option>PM</option><option>AM+PM</option></select>
+        </div>
+        <div class="field"><label>Nombre de personnes</label><input class="input" id="taskPeople" type="number" min="1" value="1" /></div>
+        <div class="field"><label>Type</label><select class="select" id="taskType"><option>Fixe</option><option>Périodique</option><option>Flexible</option></select></div>
+        <div class="field"><label>Priorité (1=obligatoire)</label><select class="select" id="taskPrio"><option>1</option><option selected>2</option><option>3</option></select></div>
+        <div class="field"><label>Actif</label><input type="checkbox" id="taskActive" checked /></div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Jours</label>
+        <div class="checkboxes" id="taskDays">
+          <label><input type="checkbox" value="Mon" checked> Lun</label>
+          <label><input type="checkbox" value="Tue" checked> Mar</label>
+          <label><input type="checkbox" value="Wed" checked> Mer</label>
+          <label><input type="checkbox" value="Thu" checked> Jeu</label>
+          <label><input type="checkbox" value="Fri" checked> Ven</label>
+          <label><input type="checkbox" value="Sat"> Sam</label>
+          <label><input type="checkbox" value="Sun"> Dim</label>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Règle spéciale (optionnel)</label><input class="input" id="taskRule" />
+      </div>
+      <div class="rowline" style="justify-content:flex-end;margin-top:12px;">
+        <button class="btn primary" id="btnSaveTask">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS: SISTER -->
+<div class="modal-backdrop" id="modalSister">
+  <div class="modal">
+    <div class="modal-head"><h3 id="sisterModalTitle">Nouvelle sœur</h3><button class="btn ghost" id="btnCloseSister">Fermer</button></div>
+    <div class="modal-body">
+      <div class="grid">
+        <div class="field"><label>Nom</label><input class="input" id="sisterName" /></div>
+        <div class="field"><label>Active</label><input type="checkbox" id="sisterActive" checked /></div>
+      </div>
+      <div class="field" style="margin-top:12px;"><label>Restrictions</label><input class="input" id="sisterRestr" placeholder="texte libre" /></div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Compétences (tâches possibles)</label>
+        <div class="checkboxes" id="sisterSkillsBox" style="max-height:220px;overflow:auto;"></div>
+        <div class="hint">Coche ce que la sœur peut faire. Le moteur ne l’assignera que sur ces tâches.</div>
+      </div>
+
+      <div class="rowline" style="justify-content:flex-end;margin-top:12px;">
+        <button class="btn primary" id="btnSaveSister">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS: ABSENCE -->
+<div class="modal-backdrop" id="modalAbsence">
+  <div class="modal">
+    <div class="modal-head"><h3>Ajouter une absence</h3><button class="btn ghost" id="btnCloseAbsence">Fermer</button></div>
+    <div class="modal-body">
+      <div class="grid">
+        <div class="field"><label>Sœur</label><select class="select" id="absenceSister"></select></div>
+        <div class="field"><label>Date</label><input class="input" type="date" id="absenceDate2" /></div>
+        <div class="field"><label>AM/PM</label><select class="select" id="absenceMoment"><option>AM</option><option>PM</option><option>Journée</option></select></div>
+        <div class="field"><label>Motif</label><select class="select" id="absenceReason"><option>Malade</option><option>RDV extérieur</option><option>Autre</option></select></div>
+      </div>
+      <div class="rowline" style="justify-content:flex-end;margin-top:12px;">
+        <button class="btn primary" id="btnSaveAbsence">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS: FIXED ASSIGNMENT -->
+<div class="modal-backdrop" id="modalAssign">
+  <div class="modal">
+    <div class="modal-head"><h3>Nouvelle affectation fixe</h3><button class="btn ghost" id="btnCloseAssign">Fermer</button></div>
+    <div class="modal-body">
+      <div class="grid">
+        <div class="field"><label>Sœur</label><select class="select" id="assignSister"></select></div>
+        <div class="field"><label>Tâche</label><select class="select" id="assignTask"></select></div>
+        <div class="field"><label>AM/PM</label><select class="select" id="assignMoment"><option>AM</option><option>PM</option></select></div>
+        <div class="field"><label>Type</label><select class="select" id="assignType"><option>Bloquant</option><option>Préféré</option></select></div>
+        <div class="field"><label>Début</label><input class="input" type="date" id="assignStart" /></div>
+        <div class="field"><label>Fin</label><input class="input" type="date" id="assignEnd" /></div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Jours</label>
+        <div class="checkboxes" id="assignDays">
+          <label><input type="checkbox" value="Mon"> Lun</label>
+          <label><input type="checkbox" value="Tue" checked> Mar</label>
+          <label><input type="checkbox" value="Wed"> Mer</label>
+          <label><input type="checkbox" value="Thu" checked> Jeu</label>
+          <label><input type="checkbox" value="Fri"> Ven</label>
+          <label><input type="checkbox" value="Sat"> Sam</label>
+          <label><input type="checkbox" value="Sun"> Dim</label>
+        </div>
+      </div>
+      <div class="rowline" style="justify-content:flex-end;margin-top:12px;">
+        <button class="btn primary" id="btnSaveAssign">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS: EDIT PLANNING -->
+<div class="modal-backdrop" id="modalEdit">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="editTitle">Modifier affectation</h3>
+      <button class="btn ghost" id="btnCloseEdit">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <div class="hint" id="editSub"></div>
+      <div id="editSelects" style="margin-top:10px;"></div>
+      <div class="rowline" style="justify-content:space-between;margin-top:12px;">
+        <button class="btn ghost" id="btnClearEdit">Vider</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn" id="btnCancelEdit">Annuler</button>
+          <button class="btn primary" id="btnSaveEdit">Enregistrer (auto-save)</button>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:10px;">Si la semaine est verrouillée 🔒, l’édition est bloquée.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">OK</div>
+
+<script>
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const toast = (msg) => {
+    const t=$("#toast");
+    t.textContent=msg;
+    t.classList.add("active");
+    setTimeout(()=>t.classList.remove("active"),1200);
+  };
+
+  const dayOrder = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const dayLabels = { Mon:"Lun", Tue:"Mar", Wed:"Mer", Thu:"Jeu", Fri:"Ven", Sat:"Sam", Sun:"Dim" };
+  const dayNamesFR = {Mon:"Lundi",Tue:"Mardi",Wed:"Mercredi",Thu:"Jeudi",Fri:"Vendredi",Sat:"Samedi",Sun:"Dimanche"};
+
+  let sisters = [];
+  let tasks = [];
+  let absences = [];
+  let fixedAssignments = [];
+  let planning = {};
+  let isLocked = false;
+  let eligibilityBySister = {};
+  let planIssues = {};
+  let planSummary = {
+    impossible:0, conflict:0, empty:0, partial:0, to_complete:0, weekly_absences:0, total_problems:0
+  };
+
+  let flatIssues = [];
+  let currentIssueIndex = 0;
+  async function apiGet(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function apiPost(url, body){
+    const r = await fetch(url, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function apiPut(url, body){
+    const r = await fetch(url, {
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function apiDelete(url){
+    const r = await fetch(url, {method:"DELETE"});
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+
+  function go(page){
+    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.page === page));
+    $$(".page").forEach(p => p.classList.remove("active"));
+    $("#page-"+page).classList.add("active");
+  }
+  $("#tabs").addEventListener("click",(e)=>{
+    const tab = e.target.closest(".tab");
+    if(!tab) return;
+    go(tab.dataset.page);
+  });
+
+  function weekISO(){ return $("#weekSelect").value; }
+
+  function setLockedUI(locked){
+    isLocked = !!locked;
+    $("#lockPill").className = isLocked ? "pill locked" : "pill ok";
+    $("#lockPill").innerHTML = isLocked
+      ? `<span class="mini"></span>Verrouillé`
+      : `<span class="mini"></span>Déverrouillé`;
+  }
+
+  function dateForDay(dayKey){
+    const monday = new Date(weekISO()+"T00:00:00");
+    const idx = dayOrder.indexOf(dayKey);
+    const dt = new Date(monday);
+    dt.setDate(monday.getDate()+idx);
+    return dt.toISOString().slice(0,10);
+  }
+
+  function addDaysISO(iso, days){
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+
+  function esc(s){
+    return String(s??"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function shorten(s,n){
+    s=String(s||"");
+    return s.length>n ? s.slice(0,n-1)+"…" : s;
+  }
+
+  function parseCSV(s){
+    return String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+  }
+
+  function dateInRange(dateISO, startISO, endISO){
+    if(!startISO || !endISO) return true;
+    return (dateISO >= startISO && dateISO <= endISO);
+  }
+
+  function isAbsent(sisterId, dateISO, moment){
+    return absences.some(a =>
+      a.sister_id===sisterId &&
+      a.date===dateISO &&
+      (a.moment===moment || a.moment==="Journée")
+    );
+  }
+
+  function rotationLabelForTask(task, weekISOValue, dayKey){
+    const rule = String(task.rule||"").trim().toLowerCase();
+    if(!rule.startsWith("rotation:")) return null;
+
+    const parts = rule.split(";").map(x=>x.trim());
+    const seqPart = parts.find(p=>p.startsWith("rotation:"));
+    const daysPart = parts.find(p=>p.startsWith("days:"));
+
+    const seq = parseCSV(seqPart.replace("rotation:",""));
+    if(seq.length===0) return null;
+
+    if(daysPart){
+      const allowed = parseCSV(daysPart.replace("days:","")).map(x=>x.trim());
+      if(allowed.length && !allowed.includes(dayKey)) return null;
+    }
+
+    const base = new Date("1970-01-05T00:00:00");
+    const d = new Date(weekISOValue+"T00:00:00");
+    const weeks = Math.floor((d - base) / (7*24*3600*1000));
+    const idx = ((weeks % seq.length) + seq.length) % seq.length;
+    return seq[idx];
+  }
+
+  function isEligible(sisterId, taskId){
+    const m = eligibilityBySister[sisterId];
+    if(!m) return true;
+    const v = m[taskId];
+    return (v === undefined) ? true : !!v;
+  }
+
+  function issueFor(slotKey, taskId){
+    const arr = planIssues[slotKey] || [];
+    return arr.find(x => Number(x.taskId) === Number(taskId)) || null;
+  }
+
+  function issueBadge(issue){
+    if(!issue) return "";
+    if(issue.status === "impossible") return `<span class="badge-warn purple">🟣 impossible</span>`;
+    if(issue.status === "conflict") return `<span class="badge-warn darkred">⛔ conflit</span>`;
+    if(issue.status === "empty") return `<span class="badge-warn red">⚠️ non pourvue</span>`;
+    if(issue.status === "partial") return `<span class="badge-warn orange">🟠 ${issue.assigned}/${issue.expected}</span>`;
+    return "";
+  }
+
+  function issueClass(issue){
+    if(!issue) return "";
+    if(issue.status === "impossible") return "task-impossible";
+    if(issue.status === "conflict") return "task-conflict";
+    if(issue.status === "empty") return "task-empty";
+    if(issue.status === "partial") return "task-partial";
+    return "";
+  }
+
+  function rebuildFlatIssues(){
+    flatIssues = [];
+    for(const slotKey of Object.keys(planIssues || {})){
+      for(const it of (planIssues[slotKey] || [])){
+        flatIssues.push({ slotKey, ...it });
+      }
+    }
+    flatIssues.sort((a,b)=>{
+      const slotA = a.slotKey;
+      const slotB = b.slotKey;
+      if(slotA !== slotB) return slotA.localeCompare(slotB);
+      return Number(a.taskId) - Number(b.taskId);
+    });
+    if(currentIssueIndex >= flatIssues.length) currentIssueIndex = 0;
+  }
+
+  function updateIssuesPill(){
+    const pill = $("#issuesPill");
+    const s = planSummary || {};
+
+    if((s.conflict || 0) > 0 || (s.impossible || 0) > 0){
+      pill.className = "pill issues-bad";
+      pill.innerHTML = `<span class="mini"></span>${s.total_problems || 0} problème${(s.total_problems||0)>1?"s":""}`;
+    }else if((s.to_complete || 0) > 0){
+      pill.className = "pill issues-warn";
+      pill.innerHTML = `<span class="mini"></span>${s.to_complete} à compléter`;
+    }else{
+      pill.className = "pill issues-ok";
+      pill.innerHTML = `<span class="mini"></span>Aucun problème`;
+    }
+
+    const bar = $("#summaryBar");
+    bar.innerHTML = `
+      <span class="summarychip">🟣 Impossibles: ${s.impossible || 0}</span>
+      <span class="summarychip">⛔ Conflits: ${s.conflict || 0}</span>
+      <span class="summarychip">🔴 Non pourvues: ${s.empty || 0}</span>
+      <span class="summarychip">🟠 Incomplètes: ${s.partial || 0}</span>
+      <span class="summarychip">👥 À compléter: ${s.to_complete || 0}</span>
+      <span class="summarychip">🗓️ Absences semaine: ${s.weekly_absences || 0}</span>
+    `;
+  }
+
+  function goToNextIssue(){
+    if(flatIssues.length === 0){
+      toast("Aucun problème 🎉");
+      return;
+    }
+
+    const targetIssue = flatIssues[currentIssueIndex];
+    currentIssueIndex = (currentIssueIndex + 1) % flatIssues.length;
+
+    const selector = `.task[data-slot="${targetIssue.slotKey}"][data-task="${targetIssue.taskId}"]`;
+    const el = document.querySelector(selector);
+    if(!el){
+      toast("Problème introuvable");
+      return;
+    }
+
+    el.scrollIntoView({ behavior:"smooth", block:"center", inline:"nearest" });
+    el.classList.add("jump-highlight");
+    setTimeout(()=>el.classList.remove("jump-highlight"), 1800);
+  }
+
+  async function reloadAbsencesForDate(date){
+    absences = await apiGet("/api/absences?date="+encodeURIComponent(date));
+    renderAbsences();
+  }
+
+  async function loadAllEligibility(){
+    eligibilityBySister = {};
+    for(const s of sisters){
+      try{
+        const m = await apiGet("/api/eligibility/" + s.id);
+        eligibilityBySister[s.id] = m || {};
+      }catch(e){
+        eligibilityBySister[s.id] = {};
+      }
+    }
+  }
+
+  async function reloadPlanIssues(){
+    planIssues = {};
+    planSummary = { impossible:0, conflict:0, empty:0, partial:0, to_complete:0, weekly_absences:0, total_problems:0 };
+    try{
+      const res = await apiGet("/api/plans/" + encodeURIComponent(weekISO()) + "/check");
+      planIssues = res.issues || {};
+      planSummary = res.summary || planSummary;
+    }catch(e){
+      planIssues = {};
+    }
+    rebuildFlatIssues();
+    updateIssuesPill();
+  }
+
+  async function reloadAll(){
+    tasks = await apiGet("/api/tasks");
+    sisters = await apiGet("/api/sisters");
+    fixedAssignments = await apiGet("/api/fixed_assignments");
+
+    await reloadAbsencesForDate($("#absenceDate").value);
+    await loadAllEligibility();
+
+    const saved = await apiGet("/api/plans/" + encodeURIComponent(weekISO()));
+    if(saved.exists){
+      planning = saved.planning || {};
+      setLockedUI(saved.locked);
+    }else{
+      setLockedUI(false);
+      generatePlanningSmart();
+    }
+
+    await reloadPlanIssues();
+
+    renderTasks();
+    renderSisters();
+    renderFixedAssignments();
+    hydrateSelects();
+    renderPlanning();
+  }
+
+  function renderTasks(){
+    const tbody = $("#tasksTable tbody");
+    tbody.innerHTML = "";
+    for(const t of tasks){
+      const days = (t.days||"").split(",").filter(Boolean).map(d=>dayLabels[d]).join(" ");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${esc(t.name)}</strong>${t.rule?`<div class="hint" title="${esc(t.rule)}">${esc(shorten(t.rule,52))}</div>`:""}</td>
+        <td>${esc(t.moment)}</td>
+        <td>${esc(days)}</td>
+        <td>${t.people}</td>
+        <td>${esc(t.type)}</td>
+        <td>${t.prio}</td>
+        <td>${Number(t.active) ? "✔️" : "—"}</td>
+        <td><div class="actions">
+          <button class="iconbtn" title="Modifier">✏️</button>
+          <button class="iconbtn" title="Supprimer">🗑️</button>
+        </div></td>
+      `;
+      const [btnEdit, btnDel] = tr.querySelectorAll(".iconbtn");
+      btnEdit.addEventListener("click", ()=>openTaskModal(t));
+      btnDel.addEventListener("click", async ()=>{
+        await apiDelete("/api/tasks/"+t.id);
+        toast("Tâche supprimée");
+        await reloadAll();
+      });
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderSisters(){
+    const tbody = $("#sistersTable tbody");
+    tbody.innerHTML="";
+    for(const s of sisters){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${esc(s.name)}</strong></td>
+        <td>${Number(s.active) ? "✔️" : "—"}</td>
+        <td>${esc(s.restr||"—")}</td>
+        <td><div class="actions">
+          <button class="iconbtn" title="Modifier">✏️</button>
+          <button class="iconbtn" title="Supprimer">🗑️</button>
+        </div></td>
+      `;
+      const [btnEdit, btnDel] = tr.querySelectorAll(".iconbtn");
+      btnEdit.addEventListener("click", ()=>openSisterModal(s));
+      btnDel.addEventListener("click", async ()=>{
+        await apiDelete("/api/sisters/"+s.id);
+        toast("Sœur supprimée");
+        await reloadAll();
+      });
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderAbsences(){
+    const tbody = $("#absencesTable tbody");
+    tbody.innerHTML="";
+    if(absences.length===0){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td colspan="5" style="color:var(--muted);font-weight:900;">Aucune absence ce jour-là.</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    for(const a of absences){
+      const sName = sisters.find(s=>s.id===a.sister_id)?.name || "?";
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><strong>${esc(sName)}</strong></td>
+        <td>${esc(a.date)}</td>
+        <td>${esc(a.moment)}</td>
+        <td>${esc(a.reason)}</td>
+        <td><div class="actions"><button class="iconbtn">🗑️</button></div></td>
+      `;
+      tr.querySelector(".iconbtn").addEventListener("click", async ()=>{
+        await apiDelete("/api/absences/"+a.id);
+        toast("Absence supprimée");
+        await reloadAbsencesForDate($("#absenceDate").value);
+
+        const saved = await apiGet("/api/plans/" + encodeURIComponent(weekISO()));
+        if(!saved.exists){
+          generatePlanningSmart();
+        }
+        await reloadPlanIssues();
+        renderPlanning();
+      });
+      tbody.appendChild(tr);
+    }
+  }
+  function renderFixedAssignments(){
+    const tbody=$("#assignTable tbody");
+    tbody.innerHTML="";
+    if(fixedAssignments.length===0){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td colspan="8" style="color:var(--muted);font-weight:900;">Aucune affectation.</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    for(const fa of fixedAssignments){
+      const sName = sisters.find(s=>s.id===fa.sister_id)?.name || "?";
+      const tName = tasks.find(t=>t.id===fa.task_id)?.name || "?";
+      const days = (fa.days||"").split(",").filter(Boolean).map(d=>dayLabels[d]).join(" ");
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><strong>${esc(sName)}</strong></td>
+        <td>${esc(tName)}</td>
+        <td>${esc(days)}</td>
+        <td>${esc(fa.moment)}</td>
+        <td>${esc(fa.start)}</td>
+        <td>${esc(fa.end)}</td>
+        <td>${esc(fa.type)}</td>
+        <td><div class="actions"><button class="iconbtn">🗑️</button></div></td>
+      `;
+      tr.querySelector(".iconbtn").addEventListener("click", async ()=>{
+        await apiDelete("/api/fixed_assignments/"+fa.id);
+        toast("Affectation supprimée");
+        await reloadAll();
+      });
+      tbody.appendChild(tr);
+    }
+  }
+
+  function hydrateSelects(){
+    $("#absenceSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+    $("#assignSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+    $("#assignTask").innerHTML = tasks.filter(t=>Number(t.active)).map(t=>`<option value="${t.id}">${esc(t.name)} (${esc(t.moment)})</option>`).join("");
+  }
+
+  async function saveWeek(locked=false){
+    await apiPost("/api/plans/" + encodeURIComponent(weekISO()), { planning, locked });
+    await reloadPlanIssues();
+  }
+
+  function generatePlanningSmart(){
+    planning = {};
+
+    const week = weekISO();
+    const monday = new Date(week+"T00:00:00");
+
+    const dates = {};
+    dayOrder.forEach((d,i)=>{
+      const dt = new Date(monday);
+      dt.setDate(monday.getDate()+i);
+      dates[d] = dt.toISOString().slice(0,10);
+    });
+
+    const load = {};
+    const loadAM = {};
+    const loadPM = {};
+    sisters.forEach(s=>{
+      load[s.id]=0;
+      loadAM[s.id]=0;
+      loadPM[s.id]=0;
+    });
+
+    const lastAssignedByTask = {};
+
+    function fixedForSlot(dayKey, moment, dateISO){
+      return fixedAssignments.filter(fa=>{
+        if(fa.moment !== moment) return false;
+        const faDays = parseCSV(fa.days);
+        if(faDays.length && !faDays.includes(dayKey)) return false;
+        if(!dateInRange(dateISO, fa.start, fa.end)) return false;
+        return true;
+      });
+    }
+
+    function pickCandidate(candidates, moment, alreadyInSlot, prevForThisTask){
+      const momentLoad = moment==="AM" ? loadAM : loadPM;
+      let best = null;
+      let bestScore = 1e9;
+
+      for(const s of candidates){
+        const sid = s.id;
+        if(alreadyInSlot.has(sid)) continue;
+
+        let score = 0;
+        score += load[sid] * 3;
+        score += momentLoad[sid] * 2;
+        if(prevForThisTask && prevForThisTask.includes(sid)) score += 6;
+        score += Math.random() * 0.2;
+
+        if(score < bestScore){
+          bestScore = score;
+          best = sid;
+        }
+      }
+      return best;
+    }
+
+    for(const dayKey of dayOrder){
+      for(const moment of ["AM","PM"]){
+        const slotKey = `${dayKey}-${moment}`;
+        const dateISO = dates[dayKey];
+
+        const slotTasks = tasks
+          .filter(t=>Number(t.active))
+          .filter(t=> (t.moment==="AM+PM") ? true : (t.moment===moment))
+          .filter(t=> parseCSV(t.days).includes(dayKey))
+          .sort((a,b)=>{
+            const typeWeight = x => x.type==="Fixe" ? 0 : x.type==="Périodique" ? 1 : 2;
+            if(typeWeight(a)!==typeWeight(b)) return typeWeight(a)-typeWeight(b);
+            return Number(a.prio)-Number(b.prio);
+          });
+
+        planning[slotKey] = slotTasks.map(t=>({taskId:t.id, assigned:[]}));
+
+        const baseCandidates = sisters
+          .filter(s=>Number(s.active))
+          .filter(s=>!isAbsent(s.id, dateISO, moment));
+
+        const fixed = fixedForSlot(dayKey, moment, dateISO);
+        const forcedMap = {};
+        const prefMap = {};
+
+        for(const fa of fixed){
+          if(isAbsent(fa.sister_id, dateISO, moment)) continue;
+          if(!isEligible(fa.sister_id, fa.task_id)) continue;
+
+          if(fa.type === "Bloquant"){
+            if(!forcedMap[fa.task_id]) forcedMap[fa.task_id]=[];
+            forcedMap[fa.task_id].push(fa.sister_id);
+          }else{
+            if(!prefMap[fa.task_id]) prefMap[fa.task_id]=[];
+            prefMap[fa.task_id].push(fa.sister_id);
+          }
+        }
+
+        const alreadyInSlot = new Set();
+
+        for(const item of planning[slotKey]){
+          const t = tasks.find(x=>x.id===item.taskId);
+          if(!t) continue;
+
+          const needed = Math.max(1, Number(t.people||1));
+          const prevForThisTask = lastAssignedByTask[t.id] || null;
+          const candidates = baseCandidates.filter(s=>isEligible(s.id, t.id));
+
+          const forced = (forcedMap[t.id] || []).filter(Boolean);
+          for(const sid of forced){
+            if(item.assigned.length >= needed) break;
+            if(alreadyInSlot.has(sid)) continue;
+            if(!candidates.some(c=>c.id===sid)) continue;
+            item.assigned.push(sid);
+            alreadyInSlot.add(sid);
+          }
+
+          const pref = (prefMap[t.id] || []).filter(Boolean);
+          for(const sid of pref){
+            if(item.assigned.length >= needed) break;
+            if(alreadyInSlot.has(sid)) continue;
+            if(!candidates.some(c=>c.id===sid)) continue;
+            item.assigned.push(sid);
+            alreadyInSlot.add(sid);
+          }
+
+          while(item.assigned.length < needed){
+            const sid = pickCandidate(candidates, moment, alreadyInSlot, prevForThisTask);
+            if(!sid) break;
+            item.assigned.push(sid);
+            alreadyInSlot.add(sid);
+          }
+
+          for(const sid of item.assigned){
+            load[sid] += 1;
+            if(moment==="AM") loadAM[sid] += 1;
+            else loadPM[sid] += 1;
+          }
+
+          lastAssignedByTask[t.id] = item.assigned.slice();
+        }
+      }
+    }
+  }
+
+  function renderPlanning(){
+    for(const day of dayOrder){
+      for(const moment of ["AM","PM"]){
+        const slotKey = `${day}-${moment}`;
+        const el = $("#slot-"+slotKey);
+
+        el.innerHTML = `<div class="slot-title">
+          <span>${moment} · ${dayLabels[day]}</span>
+          <span style="font-weight:900;color:var(--muted);">${isLocked ? "🔒" : "✏️"}</span>
+        </div>`;
+
+        (planning[slotKey]||[]).forEach(it=>{
+          const t = tasks.find(x=>x.id===it.taskId); if(!t) return;
+          const names = (it.assigned||[]).map(sid => sisters.find(s=>s.id===sid)?.name).filter(Boolean);
+
+          const rot = rotationLabelForTask(t, weekISO(), day);
+          const shownName = rot ? `${t.name} (${rot})` : t.name;
+
+          const btn = isLocked
+            ? `<span class="mini-tag" style="opacity:.75">verrouillé</span>`
+            : `<button class="iconbtn js-edit" title="Modifier" data-day="${day}" data-moment="${moment}" data-taskid="${t.id}">✏️</button>`;
+
+          const issue = issueFor(slotKey, t.id);
+          const cls = issueClass(issue);
+          const badge = issueBadge(issue);
+
+          const card = document.createElement("div");
+          card.className = "task " + cls;
+          card.dataset.slot = slotKey;
+          card.dataset.task = String(t.id);
+
+          card.innerHTML = `
+            <div class="task-top">
+              <div>
+                <div class="task-name">${esc(shownName)}</div>
+                <div class="task-meta">
+                  <span class="mini-tag">${esc(t.type)}</span>
+                  <span class="mini-tag">${t.people} pers</span>
+                  ${t.rule ? `<span class="mini-tag" title="${esc(t.rule)}">Règle</span>` : ""}
+                  ${badge ? badge : ""}
+                </div>
+              </div>
+              ${btn}
+            </div>
+            <div class="assigned">${
+              names.length
+                ? names.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
+                : `<span class="chip" style="opacity:.75">—</span>`
+            }</div>
+          `;
+          el.appendChild(card);
+        });
+      }
+    }
+
+    $$(".js-edit").forEach(b=>{
+      b.addEventListener("click", ()=>openEditModal(b.dataset.day, b.dataset.moment, Number(b.dataset.taskid)));
+    });
+
+    buildDailyPrintPages();
+    buildWeeklyPrintPage();
+  }
+
+  function buildDailyPrintPages(){
+    const container = $("#printDaily");
+    const week = weekISO();
+    const monday = new Date(week+"T00:00:00");
+    let html="";
+    for(let i=0;i<dayOrder.length;i++){
+      const d = dayOrder[i];
+      const dateObj=new Date(monday);
+      dateObj.setDate(monday.getDate()+i);
+      const dateFR = dateObj.toLocaleDateString("fr-BE",{year:"numeric",month:"long",day:"numeric"});
+      html += `<div class="p-day">
+        <div class="p-header">
+          <p class="p-title">${esc(dayNamesFR[d])}</p>
+          <div style="text-align:right">
+            <p class="p-date">${esc(dateFR)}</p>
+            <p class="p-week">Semaine du ${esc(monday.toLocaleDateString("fr-BE"))}</p>
+          </div>
+        </div>
+        ${dailyBlock(d,"AM","Matin (09h30–11h50)")}
+        ${dailyBlock(d,"PM","Après-midi (14h30–16h50)")}
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function buildWeeklyPrintPage(){
+    const week = weekISO();
+    let html = `<div class="pw-title">Planning semaine du ${esc(new Date(week+"T00:00:00").toLocaleDateString("fr-BE"))}</div>`;
+    html += `<table class="pw-table"><thead><tr><th style="width:90px;">Créneau</th>`;
+    html += dayOrder.map(d=>`<th>${esc(dayNamesFR[d])}</th>`).join("");
+    html += `</tr></thead><tbody>`;
+
+    for(const moment of ["AM","PM"]){
+      html += `<tr><td class="pw-slot">${moment}</td>`;
+      for(const day of dayOrder){
+        const slotKey = `${day}-${moment}`;
+        const items = planning[slotKey] || [];
+        html += `<td>`;
+        for(const it of items){
+          const t = tasks.find(x=>x.id===it.taskId); if(!t) continue;
+          const rot = rotationLabelForTask(t, weekISO(), day);
+          const shownName = rot ? `${t.name} (${rot})` : t.name;
+          const who = (it.assigned||[]).map(sid => sisters.find(s=>s.id===sid)?.name).filter(Boolean).join(", ") || "—";
+          html += `<div class="pw-task"><div class="pw-task-name">${esc(shownName)}</div><div class="pw-task-who">${esc(who)}</div></div>`;
+        }
+        html += `</td>`;
+      }
+      html += `</tr>`;
+    }
+
+    html += `</tbody></table>`;
+    $("#printWeek").innerHTML = html;
+  }
+
+  function dailyBlock(dayKey, moment, title){
+    const slotKey = `${dayKey}-${moment}`;
+    const items = (planning[slotKey]||[]).map(it=>{
+      const t = tasks.find(x=>x.id===it.taskId); if(!t) return null;
+      const rot = rotationLabelForTask(t, weekISO(), dayKey);
+      const name = rot ? `${t.name} (${rot})` : t.name;
+      const who = (it.assigned||[]).map(sid => sisters.find(s=>s.id===sid)?.name).filter(Boolean).join(", ") || "—";
+      return {name, who, rule:t.rule||"", type:t.type, prio:Number(t.prio||2)};
+    }).filter(Boolean).sort((a,b)=>{
+      const w = x => x.type==="Fixe"?0 : x.type==="Périodique"?1 : 2;
+      if(w(a)!==w(b)) return w(a)-w(b);
+      if(a.prio!==b.prio) return a.prio-b.prio;
+      return a.name.localeCompare(b.name,"fr");
+    });
+
+    let lines="";
+    for(const row of items){
+      lines += `<div class="p-line"><div class="p-task">${esc(row.name)}</div><div class="p-who">${esc(row.who)}</div></div>`;
+      if(row.rule) lines += `<div class="p-note">Note: ${esc(row.rule)}</div>`;
+    }
+    if(!lines) lines = `<div class="p-line"><div class="p-task">—</div><div class="p-who">—</div></div>`;
+    return `<div class="p-block"><h3>${esc(title)}</h3>${lines}</div>`;
+  }
+
+  let editCtx = null;
+
+  function closeEdit(){
+    $("#modalEdit").classList.remove("active");
+    editCtx = null;
+  }
+
+  $("#btnCloseEdit").addEventListener("click", closeEdit);
+  $("#btnCancelEdit").addEventListener("click", closeEdit);
+  $("#modalEdit").addEventListener("click",(e)=>{ if(e.target.id==="modalEdit") closeEdit(); });
+
+  function openEditModal(day, moment, taskId){
+    if(isLocked){ toast("Semaine verrouillée 🔒"); return; }
+
+    const slotKey = `${day}-${moment}`;
+    const list = planning[slotKey] || [];
+    const idx = list.findIndex(x=>Number(x.taskId)===Number(taskId));
+    if(idx < 0){ toast("Tâche introuvable"); return; }
+
+    const t = tasks.find(x=>x.id===taskId);
+    if(!t){ toast("Tâche inconnue"); return; }
+
+    editCtx = { day, moment, taskId, slotKey, index: idx };
+
+    const dateISO = dateForDay(day);
+    const needed = Math.max(1, Number(t.people||1));
+    const currentAssigned = (list[idx].assigned || []).slice(0, needed);
+
+    const rot = rotationLabelForTask(t, weekISO(), day);
+    const shownName = rot ? `${t.name} (${rot})` : t.name;
+
+    $("#editTitle").textContent = `Modifier: ${shownName}`;
+    $("#editSub").innerHTML = `
+      <span class="mini-tag">${dayNamesFR[day]} · ${moment}</span>
+      <span class="mini-tag">Date: ${dateISO}</span>
+      <span class="mini-tag">${needed} pers</span>
+    `;
+
+    const candidates = sisters
+      .filter(s=>Number(s.active))
+      .filter(s=>isEligible(s.id, t.id))
+      .map(s=>{
+        const absent = isAbsent(s.id, dateISO, moment);
+        return { id:s.id, name:s.name, absent };
+      });
+
+    const wrap = $("#editSelects");
+    wrap.innerHTML = "";
+
+    for(let i=0;i<needed;i++){
+      const field = document.createElement("div");
+      field.className = "field";
+      field.style.marginBottom = "10px";
+      const selId = `editSel_${i}`;
+
+      const options = [`<option value="">—</option>`].concat(
+        candidates.map(c=>{
+          const label = c.absent ? `${c.name} (absente)` : c.name;
+          return `<option value="${c.id}">${esc(label)}</option>`;
+        })
+      ).join("");
+
+      field.innerHTML = `
+        <label>Personne ${i+1}</label>
+        <select class="select" id="${selId}">${options}</select>
+      `;
+      wrap.appendChild(field);
+
+      $("#"+selId).value = currentAssigned[i] ? String(currentAssigned[i]) : "";
+    }
+
+    $("#modalEdit").classList.add("active");
+  }
+
+  $("#btnClearEdit").addEventListener("click", ()=>{
+    if(!editCtx) return;
+    $$("#editSelects select").forEach(s=>s.value="");
+    toast("Vidé");
+  });
+
+  $("#btnSaveEdit").addEventListener("click", async ()=>{
+    if(!editCtx) return;
+    if(isLocked){ toast("Semaine verrouillée 🔒"); return; }
+
+    const chosen = $$("#editSelects select")
+      .map(s=>s.value)
+      .filter(v=>v !== "")
+      .map(v=>Number(v))
+      .filter(n=>Number.isFinite(n));
+
+    const uniq = [];
+    for(const id of chosen){ if(!uniq.includes(id)) uniq.push(id); }
+
+    planning[editCtx.slotKey][editCtx.index].assigned = uniq;
+
+    await saveWeek(false);
+    closeEdit();
+    renderPlanning();
+    toast("Affectation enregistrée");
+  });
+
+  let editingTask = null;
+  $("#btnNewTask").addEventListener("click", ()=>openTaskModal(null));
+  $("#btnCloseTask").addEventListener("click", ()=>$("#modalTask").classList.remove("active"));
+  $("#modalTask").addEventListener("click",(e)=>{ if(e.target.id==="modalTask") $("#modalTask").classList.remove("active"); });
+
+  function openTaskModal(task){
+    editingTask = task;
+    $("#taskModalTitle").textContent = task ? "Modifier la tâche" : "Nouvelle tâche";
+    $("#taskName").value = task?.name || "";
+    $("#taskMoment").value = task?.moment || "AM";
+    $("#taskPeople").value = task?.people ?? 1;
+    $("#taskType").value = task?.type || "Fixe";
+    $("#taskPrio").value = String(task?.prio ?? 2);
+    $("#taskActive").checked = task ? !!Number(task.active) : true;
+    $("#taskRule").value = task?.rule || "";
+    const selected = new Set((task?.days||"Mon,Tue,Wed,Thu,Fri").split(",").filter(Boolean));
+    $$("#taskDays input[type=checkbox]").forEach(cb=>cb.checked = selected.has(cb.value));
+    $("#modalTask").classList.add("active");
+  }
+
+  $("#btnSaveTask").addEventListener("click", async ()=>{
+    const name = $("#taskName").value.trim();
+    if(!name) return toast("Nom requis");
+    const payload = {
+      name,
+      moment: $("#taskMoment").value,
+      people: Number($("#taskPeople").value || 1),
+      type: $("#taskType").value,
+      prio: Number($("#taskPrio").value),
+      active: $("#taskActive").checked,
+      rule: $("#taskRule").value.trim(),
+      days: $$("#taskDays input[type=checkbox]").filter(cb=>cb.checked).map(cb=>cb.value),
+    };
+    if(payload.days.length===0) return toast("Choisis des jours");
+
+    if(editingTask){
+      await apiPut("/api/tasks/"+editingTask.id, payload);
+      toast("Tâche modifiée");
+    }else{
+      await apiPost("/api/tasks", payload);
+      toast("Tâche ajoutée");
+    }
+    $("#modalTask").classList.remove("active");
+    await reloadAll();
+  });
+
+  let editingSister = null;
+  let editingSisterSkills = {};
+
+  $("#btnNewSister").addEventListener("click", ()=>openSisterModal(null));
+  $("#btnCloseSister").addEventListener("click", ()=>$("#modalSister").classList.remove("active"));
+  $("#modalSister").addEventListener("click",(e)=>{ if(e.target.id==="modalSister") $("#modalSister").classList.remove("active"); });
+
+  async function openSisterModal(sister){
+    editingSister = sister;
+    $("#sisterModalTitle").textContent = sister ? "Modifier la sœur" : "Nouvelle sœur";
+    $("#sisterName").value = sister?.name || "";
+    $("#sisterActive").checked = sister ? !!Number(sister.active) : true;
+    $("#sisterRestr").value = sister?.restr || "—";
+
+    editingSisterSkills = {};
+    if(sister){
+      const m = await apiGet("/api/eligibility/" + sister.id);
+      editingSisterSkills = m || {};
+    }else{
+      for(const t of tasks){ editingSisterSkills[t.id] = true; }
+    }
+
+    renderSisterSkillsCheckboxes();
+    $("#modalSister").classList.add("active");
+  }
+
+  function renderSisterSkillsCheckboxes(){
+    const box = $("#sisterSkillsBox");
+    const activeTasks = tasks.filter(t=>Number(t.active));
+    box.innerHTML = activeTasks.map(t=>{
+      const checked = (editingSisterSkills[t.id] === undefined) ? true : !!editingSisterSkills[t.id];
+      return `<label style="display:flex;gap:8px;align-items:center;min-width:220px;">
+        <input type="checkbox" data-taskid="${t.id}" ${checked ? "checked" : ""}>
+        <span><strong>${esc(t.name)}</strong> <span style="color:var(--muted);font-weight:900;">(${esc(t.moment)})</span></span>
+      </label>`;
+    }).join("");
+
+    $$("#sisterSkillsBox input[type=checkbox]").forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        const tid = Number(cb.dataset.taskid);
+        editingSisterSkills[tid] = cb.checked;
+      });
+    });
+  }
+
+  $("#btnSaveSister").addEventListener("click", async ()=>{
+    const name = $("#sisterName").value.trim();
+    if(!name) return toast("Nom requis");
+
+    const payload = {
+      name,
+      active: $("#sisterActive").checked,
+      restr: $("#sisterRestr").value.trim() || "—"
+    };
+
+    let sisterId = editingSister?.id;
+
+    if(editingSister){
+      await apiPut("/api/sisters/"+editingSister.id, payload);
+      toast("Sœur modifiée");
+    }else{
+      const created = await apiPost("/api/sisters", payload);
+      sisterId = created.id;
+      toast("Sœur ajoutée");
+    }
+
+    const mapToSave = {};
+    for(const t of tasks){
+      mapToSave[String(t.id)] = (editingSisterSkills[t.id] === undefined) ? true : !!editingSisterSkills[t.id];
+    }
+    await apiPost("/api/eligibility/" + sisterId, { map: mapToSave });
+
+    $("#modalSister").classList.remove("active");
+    await reloadAll();
+  });
+
+  $("#btnNewAbsence").addEventListener("click", ()=>{
+    $("#absenceDate2").value = $("#absenceDate").value;
+    hydrateSelects();
+    $("#modalAbsence").classList.add("active");
+  });
+  $("#btnCloseAbsence").addEventListener("click", ()=>$("#modalAbsence").classList.remove("active"));
+  $("#modalAbsence").addEventListener("click",(e)=>{ if(e.target.id==="modalAbsence") $("#modalAbsence").classList.remove("active"); });
+  $("#btnSaveAbsence").addEventListener("click", async ()=>{
+    const payload = {
+      sister_id: Number($("#absenceSister").value),
+      date: $("#absenceDate2").value,
+      moment: $("#absenceMoment").value,
+      reason: $("#absenceReason").value
+    };
+    await apiPost("/api/absences", payload);
+    $("#modalAbsence").classList.remove("active");
+    $("#absenceDate").value = payload.date;
+    toast("Absence ajoutée");
+    await reloadAll();
+  });
+
+  $("#btnNewAssign").addEventListener("click", ()=>{
+    hydrateSelects();
+    const today = new Date().toISOString().slice(0,10);
+    $("#assignStart").value = today;
+    $("#assignEnd").value = today;
+    $("#modalAssign").classList.add("active");
+  });
+  $("#btnCloseAssign").addEventListener("click", ()=>$("#modalAssign").classList.remove("active"));
+  $("#modalAssign").addEventListener("click",(e)=>{ if(e.target.id==="modalAssign") $("#modalAssign").classList.remove("active"); });
+  $("#btnSaveAssign").addEventListener("click", async ()=>{
+    const days = $$("#assignDays input[type=checkbox]").filter(cb=>cb.checked).map(cb=>cb.value);
+    if(days.length===0) return toast("Choisis des jours");
+    const payload = {
+      sister_id: Number($("#assignSister").value),
+      task_id: Number($("#assignTask").value),
+      moment: $("#assignMoment").value,
+      type: $("#assignType").value,
+      start: $("#assignStart").value,
+      end: $("#assignEnd").value,
+      days
+    };
+    await apiPost("/api/fixed_assignments", payload);
+    $("#modalAssign").classList.remove("active");
+    toast("Affectation ajoutée");
+    await reloadAll();
+  });
+
+  $("#btnPdfDay").addEventListener("click", ()=>{
+    document.body.classList.remove("print-weekly");
+    document.body.classList.add("print-daily");
+    window.print();
+  });
+
+  $("#btnPdfWeek").addEventListener("click", ()=>{
+    document.body.classList.remove("print-daily");
+    document.body.classList.add("print-weekly");
+    window.print();
+  });
+
+  $("#btnGenerate").addEventListener("click", async ()=>{
+    if(isLocked){ toast("Déverrouille avant de régénérer 🔓"); return; }
+    generatePlanningSmart();
+    renderPlanning();
+    await saveWeek(false);
+    toast("Planning généré");
+  });
+
+  $("#btnSaveWeek").addEventListener("click", async ()=>{
+    await saveWeek(isLocked);
+    toast("Semaine sauvegardée");
+  });
+
+  $("#btnCloneNext").addEventListener("click", async ()=>{
+    const w = weekISO();
+    if(!w) return toast("Choisis une semaine");
+    const ok = confirm("Dupliquer cette semaine vers la semaine suivante ?");
+    if(!ok) return;
+
+    await apiPost("/api/plans/" + encodeURIComponent(w) + "/clone_next", {});
+    const next = addDaysISO(w, 7);
+    $("#weekSelect").value = next;
+    await reloadAll();
+    toast("Semaine dupliquée ✅");
+  });
+
+  $("#btnLock").addEventListener("click", async ()=>{
+    await saveWeek(true);
+    await apiPost("/api/plans/" + encodeURIComponent(weekISO()) + "/lock", {});
+    setLockedUI(true);
+    toast("Semaine verrouillée");
+  });
+
+  $("#btnUnlock").addEventListener("click", async ()=>{
+    await apiPost("/api/plans/" + encodeURIComponent(weekISO()) + "/unlock", {});
+    setLockedUI(false);
+    toast("Semaine déverrouillée");
+  });
+
+  $("#issuesPill").addEventListener("click", goToNextIssue);
+
+  $("#weekSelect").addEventListener("change", async ()=>{
+    await reloadAll();
+    toast("Semaine chargée");
+  });
+
+  $("#absenceDate").addEventListener("change", async ()=>{
+    await reloadAbsencesForDate($("#absenceDate").value);
+    await reloadPlanIssues();
+    renderPlanning();
+    toast("Absences chargées");
+  });
+
+  document.addEventListener("keydown",(e)=>{
+    if(e.key!=="Escape") return;
+    ["modalTask","modalSister","modalAbsence","modalAssign","modalEdit"].forEach(id=>$("#"+id).classList.remove("active"));
+  });
+
+  (function initDates(){
+    const today = new Date();
+    const dow = (today.getDay()+6)%7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate()-dow);
+    $("#weekSelect").value = monday.toISOString().slice(0,10);
+    $("#absenceDate").value = today.toISOString().slice(0,10);
+  })();
+
+  reloadAll().catch(err=>{
+    console.error(err);
+    toast("Erreur: " + err.message);
+  });
+</script>
+</body>
+</html>
