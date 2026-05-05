@@ -326,6 +326,7 @@
       <div class="tab" data-page="assignments">Affectations fixes</div>
     </div>
     <div class="spacer"></div>
+    <a class="tab" href="/logout">Quitter</a>
   </div>
 </div>
 
@@ -706,6 +707,13 @@
 
   function weekISO(){ return $("#weekSelect").value; }
 
+  function toLocalISODate(date){
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
   function setLockedUI(locked){
     isLocked = !!locked;
     $("#lockPill").className = isLocked ? "pill locked" : "pill ok";
@@ -719,13 +727,13 @@
     const idx = dayOrder.indexOf(dayKey);
     const dt = new Date(monday);
     dt.setDate(monday.getDate()+idx);
-    return dt.toISOString().slice(0,10);
+    return toLocalISODate(dt);
   }
 
   function addDaysISO(iso, days){
     const d = new Date(iso + "T00:00:00");
     d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0,10);
+    return toLocalISODate(d);
   }
 
   function esc(s){
@@ -735,6 +743,10 @@
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
+  }
+
+  function confirmAction(message){
+    return window.confirm(message);
   }
 
   function shorten(s,n){
@@ -919,7 +931,12 @@
   }
 
   async function reloadAbsencesForDate(date){
-    absences = await apiGet("/api/absences?date="+encodeURIComponent(date));
+    const weekStart = weekISO();
+    const weekEnd = addDaysISO(weekStart, 6);
+    absences = await apiGet(
+      "/api/absences?start=" + encodeURIComponent(weekStart) +
+      "&end=" + encodeURIComponent(weekEnd)
+    );
     renderAbsences();
   }
 
@@ -1012,6 +1029,7 @@
       const [btnEdit, btnDel] = tr.querySelectorAll(".iconbtn");
       btnEdit.addEventListener("click", ()=>openTaskModal(t));
       btnDel.addEventListener("click", async ()=>{
+        if(!confirmAction(`Supprimer la tâche "${t.name}" ?`)) return;
         await apiDelete("/api/tasks/"+t.id);
         toast("Tâche supprimée");
         await reloadAll();
@@ -1037,6 +1055,7 @@
       const [btnEdit, btnDel] = tr.querySelectorAll(".iconbtn");
       btnEdit.addEventListener("click", ()=>openSisterModal(s));
       btnDel.addEventListener("click", async ()=>{
+        if(!confirmAction(`Supprimer la sœur "${s.name}" ?`)) return;
         await apiDelete("/api/sisters/"+s.id);
         toast("Sœur supprimée");
         await reloadAll();
@@ -1048,13 +1067,15 @@
   function renderAbsences(){
     const tbody = $("#absencesTable tbody");
     tbody.innerHTML="";
-    if(absences.length===0){
+    const selectedDate = $("#absenceDate").value;
+    const visibleAbsences = absences.filter(a => !selectedDate || a.date === selectedDate);
+    if(visibleAbsences.length===0){
       const tr=document.createElement("tr");
       tr.innerHTML=`<td colspan="5" style="color:var(--muted);font-weight:900;">Aucune absence ce jour-là.</td>`;
       tbody.appendChild(tr);
       return;
     }
-    for(const a of absences){
+    for(const a of visibleAbsences){
       const sName = sisters.find(s=>s.id===a.sister_id)?.name || "?";
       const tr=document.createElement("tr");
       tr.innerHTML=`
@@ -1065,6 +1086,7 @@
         <td><div class="actions"><button class="iconbtn">🗑️</button></div></td>
       `;
       tr.querySelector(".iconbtn").addEventListener("click", async ()=>{
+        if(!confirmAction(`Supprimer l'absence de ${sName} le ${a.date} ?`)) return;
         await apiDelete("/api/absences/"+a.id);
         toast("Absence supprimée");
         await reloadAbsencesForDate($("#absenceDate").value);
@@ -1105,6 +1127,7 @@
         <td><div class="actions"><button class="iconbtn">🗑️</button></div></td>
       `;
       tr.querySelector(".iconbtn").addEventListener("click", async ()=>{
+        if(!confirmAction(`Supprimer l'affectation "${sName} - ${tName}" ?`)) return;
         await apiDelete("/api/fixed_assignments/"+fa.id);
         toast("Affectation supprimée");
         await reloadAll();
@@ -1135,7 +1158,7 @@
     dayOrder.forEach((d,i)=>{
       const dt = new Date(monday);
       dt.setDate(monday.getDate()+i);
-      dates[d] = dt.toISOString().slice(0,10);
+      dates[d] = toLocalISODate(dt);
     });
 
     const sisterSchedules = {}; // sisterId -> { "Mon-AM":[{start,end,taskId}] }
@@ -1821,8 +1844,8 @@
     const dow = (today.getDay()+6)%7;
     const monday = new Date(today);
     monday.setDate(today.getDate()-dow);
-    $("#weekSelect").value = monday.toISOString().slice(0,10);
-    $("#absenceDate").value = today.toISOString().slice(0,10);
+    $("#weekSelect").value = toLocalISODate(monday);
+    $("#absenceDate").value = toLocalISODate(today);
   })();
 
   reloadAll().catch(err=>{

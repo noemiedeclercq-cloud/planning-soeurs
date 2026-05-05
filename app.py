@@ -1,10 +1,65 @@
 # app.py
-from flask import Flask, jsonify, request, render_template
+import hmac
+import os
 from datetime import datetime, timedelta
+
+from flask import Flask, jsonify, redirect, request, render_template, session, url_for
 from db import init_db, get_conn
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY") or os.getenv("PLANNING_PASSWORD") or "dev-secret-change-me"
 init_db()
+
+
+def auth_enabled():
+    return bool(os.getenv("PLANNING_PASSWORD"))
+
+
+def is_authenticated():
+    return (not auth_enabled()) or bool(session.get("authenticated"))
+
+
+@app.before_request
+def require_auth():
+    public_endpoints = {"login", "do_login", "logout", "health", "ping", "static"}
+    if request.endpoint in public_endpoints:
+        return None
+
+    if is_authenticated():
+        return None
+
+    if request.path.startswith("/api/"):
+        return jsonify({"ok": False, "error": "authentication required"}), 401
+
+    return redirect(url_for("login", next=request.full_path))
+
+
+@app.get("/login")
+def login():
+    if is_authenticated():
+        return redirect(url_for("home"))
+    return render_template("login.html", error="")
+
+
+@app.post("/login")
+def do_login():
+    expected = os.getenv("PLANNING_PASSWORD", "")
+    password = request.form.get("password", "")
+
+    if expected and hmac.compare_digest(password, expected):
+        session["authenticated"] = True
+        next_path = request.args.get("next") or url_for("home")
+        if not next_path.startswith("/") or next_path.startswith("//"):
+            next_path = url_for("home")
+        return redirect(next_path)
+
+    return render_template("login.html", error="Mot de passe incorrect"), 401
+
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login") if auth_enabled() else url_for("home"))
 
 @app.get("/api/ping")
 def ping():
@@ -328,9 +383,18 @@ def set_eligibility(sister_id: int):
 @app.get("/api/absences")
 def list_absences():
     date = request.args.get("date", "").strip()
+    start = request.args.get("start", "").strip()
+    end = request.args.get("end", "").strip()
 
     conn = get_conn()
-    if date:
+    if start and end:
+        rows = conn.execute("""
+            SELECT id, sister_id, date, moment, reason
+            FROM absences
+            WHERE date >= ? AND date <= ?
+            ORDER BY date ASC, sister_id ASC
+        """, (start, end)).fetchall()
+    elif date:
         rows = conn.execute("""
             SELECT id, sister_id, date, moment, reason
             FROM absences
@@ -472,11 +536,14 @@ def save_plan(week: str):
 
     conn = get_conn()
 
-    plan = conn.execute("SELECT id FROM plans WHERE week=?", (week,)).fetchone()
+    plan = conn.execute("SELECT id, locked FROM plans WHERE week=?", (week,)).fetchone()
     if not plan:
         cur = conn.execute("INSERT INTO plans(week, locked) VALUES(?, ?)", (week, locked))
         plan_id = cur.lastrowid
     else:
+        if int(plan["locked"]) == 1:
+            conn.close()
+            return jsonify({"ok": False, "error": "plan is locked"}), 423
         plan_id = plan["id"]
         conn.execute("UPDATE plans SET locked=? WHERE id=?", (locked, plan_id))
 
@@ -536,11 +603,14 @@ def clone_plan_next(week: str):
     src_plan_id = src["id"]
     target_week = add_days(week, 7)
 
-    tgt = conn.execute("SELECT id FROM plans WHERE week=?", (target_week,)).fetchone()
+    tgt = conn.execute("SELECT id, locked FROM plans WHERE week=?", (target_week,)).fetchone()
     if not tgt:
         cur = conn.execute("INSERT INTO plans(week, locked) VALUES(?, 0)", (target_week,))
         tgt_plan_id = cur.lastrowid
     else:
+        if int(tgt["locked"]) == 1:
+            conn.close()
+            return jsonify({"ok": False, "error": "target plan is locked"}), 423
         tgt_plan_id = tgt["id"]
         conn.execute("UPDATE plans SET locked=0 WHERE id=?", (tgt_plan_id,))
 
