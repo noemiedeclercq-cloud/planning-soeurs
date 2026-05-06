@@ -293,23 +293,21 @@
     .pw-task-name{font-weight:900}
     .pw-task-who{color:#111827}
 
-    .ab-title{
-      font-size:20px;font-weight:900;margin:0 0 12px 0;
+    .ab-header{
+      display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+      border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:12px;
     }
-    .ab-row{
-      border-bottom:1px solid #dbe2f2;
-      padding:8px 0;
-    }
-    .ab-name{
-      font-weight:900;
-      font-size:14px;
-      margin-bottom:4px;
-    }
-    .ab-task{
-      font-size:12px;
-      margin-left:10px;
-      margin-top:2px;
-    }
+    .ab-title{font-size:19px;font-weight:900;margin:0}
+    .ab-date{font-size:13px;font-weight:900;margin:4px 0 0;color:#111827}
+    .ab-sub{font-size:11px;font-weight:800;margin:0;color:#374151;text-align:right}
+    .ab-list{display:flex;flex-direction:column;gap:7px}
+    .ab-row{border:1px solid #cfd5e3;border-radius:8px;padding:7px 9px;break-inside:avoid}
+    .ab-name{font-weight:900;font-size:13px;margin-bottom:4px}
+    .ab-task{font-size:11px;margin:3px 0 0 12px;line-height:1.25}
+    .ab-task:last-child{margin-bottom:0}
+    .ab-time{font-weight:900;white-space:nowrap}
+    .ab-empty{color:#6b7280;font-weight:800}
+    .ab-footer{margin-top:10px;font-size:10px;color:#374151;font-weight:800}
   }
 </style>
 </head>
@@ -346,7 +344,7 @@
           <button class="btn ghost" id="btnUnlock">🔓 Déverrouiller</button>
           <button class="btn ghost" id="btnPdfDay">🖨️ PDF jour</button>
           <button class="btn ghost" id="btnPdfWeek">🗓️ PDF semaine</button>
-          <button class="btn ghost" id="btnPdfAbbess">👑 PDF Abbesse</button>
+          <button class="btn ghost" id="btnPdfAbbess">👑 Feuille Mère Abbesse</button>
 
           <span class="pill ok" id="lockPill"><span class="mini"></span>Déverrouillé</span>
           <span class="pill issues-ok" id="issuesPill"><span class="mini"></span>Aucun problème</span>
@@ -1431,25 +1429,43 @@
   function buildAbbessPrintPage(res){
     const rows = res.rows || [];
     const dateObj = new Date((res.date || $("#absenceDate").value) + "T00:00:00");
-    const dateFR = dateObj.toLocaleDateString("fr-BE",{year:"numeric",month:"long",day:"numeric"});
+    const dateFR = dateObj.toLocaleDateString("fr-BE",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+    const weekFR = new Date((res.week || weekISO()) + "T00:00:00").toLocaleDateString("fr-BE");
 
-    let html = `<div class="ab-title">Feuille Abbesse · ${esc(dateFR)}</div>`;
+    let html = `<div class="ab-header">
+      <div>
+        <p class="ab-title">Feuille pour Mère Dominique</p>
+        <p class="ab-date">${esc(dateFR)}</p>
+      </div>
+      <p class="ab-sub">Planning des tâches<br>Semaine du ${esc(weekFR)}</p>
+    </div>`;
 
     if(!rows.length){
-      html += `<div class="ab-row"><div class="ab-name">Aucune affectation</div></div>`;
+      html += `<div class="ab-row"><div class="ab-empty">Aucune affectation pour ce jour.</div></div>`;
       $("#printAbbess").innerHTML = html;
       return;
     }
 
+    html += `<div class="ab-list">`;
+
     for(const row of rows){
-      html += `<div class="ab-row"><div class="ab-name">${esc(row.sister_name)}</div>`;
-      for(const t of row.tasks){
-        html += `<div class="ab-task">• ${esc(t.name)} · ${esc(t.moment)} · ${esc(t.time_label || "")}</div>`;
-      }
-      html += `</div>`;
+      html += `<div class="ab-row">
+        <div class="ab-name">${esc(row.sister_name)}</div>
+        ${abbessTaskList(row.tasks || [])}
+      </div>`;
     }
 
+    html += `</div>`;
+    html += `<div class="ab-footer">Feuille préparée depuis le planning quotidien.</div>`;
     $("#printAbbess").innerHTML = html;
+  }
+
+  function abbessTaskList(items){
+    if(!items.length) return `<div class="ab-task ab-empty">—</div>`;
+    return items.map(t => {
+      const time = normalizeTimeLabel(t.time_label, t.moment);
+      return `<div class="ab-task"><span class="ab-time">${esc(time)}</span> ${esc(t.name)}</div>`;
+    }).join("");
   }
 
   function dailyBlock(dayKey, moment, title){
