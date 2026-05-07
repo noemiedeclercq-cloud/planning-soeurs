@@ -76,6 +76,9 @@ DAY_TO_OFFSET = {
     "Sun": 6,
 }
 
+REPETITION_START = 14 * 60 + 30
+REPETITION_END = 15 * 60 + 30
+
 
 def add_days(iso_date: str, days: int) -> str:
     d = datetime.strptime(iso_date, "%Y-%m-%d") + timedelta(days=days)
@@ -152,6 +155,14 @@ def intervals_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> boo
 
 def sister_absent(abs_rows, date_iso: str, moment: str, sister_id: int) -> bool:
     return ((date_iso, moment, sister_id) in abs_rows) or ((date_iso, "Journée", sister_id) in abs_rows)
+
+
+def sister_in_repetition(repetition_days: str, day_key: str, moment: str, start: int, end: int) -> bool:
+    if moment != "PM":
+        return False
+    if day_key not in parse_csv(repetition_days):
+        return False
+    return intervals_overlap(start, end, REPETITION_START, REPETITION_END)
 
 
 @app.get("/")
@@ -259,7 +270,7 @@ def delete_task(task_id: int):
 def list_sisters():
     conn = get_conn()
     rows = conn.execute("""
-        SELECT id, name, active, restr
+        SELECT id, name, active, restr, repetition_days
         FROM sisters
         ORDER BY active DESC, name ASC
     """).fetchall()
@@ -273,12 +284,13 @@ def create_sister():
 
     conn = get_conn()
     cur = conn.execute("""
-        INSERT INTO sisters(name, active, restr)
-        VALUES (?, ?, ?)
+        INSERT INTO sisters(name, active, restr, repetition_days)
+        VALUES (?, ?, ?, ?)
     """, (
         data.get("name", "").strip(),
         1 if data.get("active", True) else 0,
-        data.get("restr", "").strip() or "—"
+        data.get("restr", "").strip() or "—",
+        ",".join(data.get("repetition_days", []))
     ))
     sid = cur.lastrowid
 
@@ -301,12 +313,13 @@ def update_sister(sister_id: int):
     conn = get_conn()
     conn.execute("""
         UPDATE sisters
-        SET name=?, active=?, restr=?
+        SET name=?, active=?, restr=?, repetition_days=?
         WHERE id=?
     """, (
         data.get("name", "").strip(),
         1 if data.get("active", True) else 0,
         data.get("restr", "").strip() or "—",
+        ",".join(data.get("repetition_days", [])),
         sister_id
     ))
     conn.commit()
@@ -706,10 +719,11 @@ def check_plan(week: str):
         allowed_map[(sid, tid)] = int(r["allowed"]) == 1
 
     sister_rows = conn.execute("""
-        SELECT id, active
+        SELECT id, active, repetition_days
         FROM sisters
     """).fetchall()
     active_sisters = {int(r["id"]) for r in sister_rows if int(r["active"]) == 1}
+    repetition_by_sister = {int(r["id"]): r["repetition_days"] or "" for r in sister_rows}
 
     # occupation d’une sœur par slot pour détecter les chevauchements
     occupancy = {}  # (day, moment, sister_id) -> list[(task_id, start, end)]
@@ -761,6 +775,9 @@ def check_plan(week: str):
             if sister_absent(abs_rows, slot_date, moment, sid):
                 continue
 
+            if sister_in_repetition(repetition_by_sister.get(sid, ""), day, moment, start, end):
+                continue
+
             # vérifier chevauchement avec tâches déjà affectées à cette sœur dans ce créneau
             overlaps = False
             for other_task_id, o_start, o_end in occupancy.get((day, moment, sid), []):
@@ -787,6 +804,10 @@ def check_plan(week: str):
                 break
 
             if sister_absent(abs_rows, slot_date, moment, sid):
+                has_conflict = True
+                break
+
+            if sister_in_repetition(repetition_by_sister.get(sid, ""), day, moment, start, end):
                 has_conflict = True
                 break
 

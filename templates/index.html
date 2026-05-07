@@ -548,6 +548,20 @@
       <div class="field" style="margin-top:12px;"><label>Restrictions</label><input class="input" id="sisterRestr" placeholder="texte libre" /></div>
 
       <div class="field" style="margin-top:12px;">
+        <label>Répétition noviciat (PM 14h30-15h30)</label>
+        <div class="checkboxes" id="sisterRepetitionDays">
+          <label><input type="checkbox" value="Mon"> Lundi</label>
+          <label><input type="checkbox" value="Tue"> Mardi</label>
+          <label><input type="checkbox" value="Wed"> Mercredi</label>
+          <label><input type="checkbox" value="Thu"> Jeudi</label>
+          <label><input type="checkbox" value="Fri"> Vendredi</label>
+          <label><input type="checkbox" value="Sat"> Samedi</label>
+          <label><input type="checkbox" value="Sun"> Dimanche</label>
+        </div>
+        <div class="hint">Ces jours-là, la sœur ne sera pas placée sur une tâche qui chevauche 14h30-15h30.</div>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
         <label>Compétences (tâches possibles)</label>
         <div class="checkboxes" id="sisterSkillsBox" style="max-height:220px;overflow:auto;"></div>
         <div class="hint">Coche ce que la sœur peut faire. Le moteur ne l’assignera que sur ces tâches.</div>
@@ -767,6 +781,18 @@
       a.date===dateISO &&
       (a.moment===moment || a.moment==="Journée")
     );
+  }
+
+  function sisterRepetitionDays(sisterId){
+    const s = sisters.find(x => Number(x.id) === Number(sisterId));
+    return parseCSV(s?.repetition_days || "");
+  }
+
+  function isInRepetition(sisterId, dayKey, moment, task){
+    if(moment !== "PM") return false;
+    if(!sisterRepetitionDays(sisterId).includes(dayKey)) return false;
+    const window = taskTimeWindow(task);
+    return overlaps(window, { start: 14*60 + 30, end: 15*60 + 30 });
   }
 
   function rotationLabelForTask(task, weekISOValue, dayKey){
@@ -1040,11 +1066,12 @@
     const tbody = $("#sistersTable tbody");
     tbody.innerHTML="";
     for(const s of sisters){
+      const repetition = parseCSV(s.repetition_days || "").map(d=>dayLabels[d]).join(" ");
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><strong>${esc(s.name)}</strong></td>
         <td>${Number(s.active) ? "✔️" : "—"}</td>
-        <td>${esc(s.restr||"—")}</td>
+        <td>${esc(s.restr||"—")}${repetition ? `<div class="hint">Répétition: ${esc(repetition)}</div>` : ""}</td>
         <td><div class="actions">
           <button class="iconbtn" title="Modifier">✏️</button>
           <button class="iconbtn" title="Supprimer">🗑️</button>
@@ -1180,6 +1207,8 @@
     }
 
     function canTakeTask(sisterId, slotKey, task){
+      const [dayKey, moment] = slotKey.split("-");
+      if(isInRepetition(sisterId, dayKey, moment, task)) return false;
       const taskWindow = taskTimeWindow(task);
       const arr = sisterSchedules[sisterId][slotKey] || [];
       return !arr.some(existing => overlaps(taskWindow, existing));
@@ -1544,7 +1573,8 @@
       .filter(s=>isEligible(s.id, t.id))
       .map(s=>{
         const absent = isAbsent(s.id, dateISO, moment);
-        return { id:s.id, name:s.name, absent };
+        const repetition = isInRepetition(s.id, day, moment, t);
+        return { id:s.id, name:s.name, absent, repetition };
       });
 
     const wrap = $("#editSelects");
@@ -1558,8 +1588,9 @@
 
       const options = [`<option value="">—</option>`].concat(
         candidates.map(c=>{
-          const label = c.absent ? `${c.name} (absente)` : c.name;
-          return `<option value="${c.id}">${esc(label)}</option>`;
+          const suffix = c.absent ? " (absente)" : c.repetition ? " (répétition)" : "";
+          const disabled = (c.absent || c.repetition) ? "disabled" : "";
+          return `<option value="${c.id}" ${disabled}>${esc(c.name + suffix)}</option>`;
         })
       ).join("");
 
@@ -1666,6 +1697,8 @@
     $("#sisterName").value = sister?.name || "";
     $("#sisterActive").checked = sister ? !!Number(sister.active) : true;
     $("#sisterRestr").value = sister?.restr || "—";
+    const repetitionDays = new Set(parseCSV(sister?.repetition_days || ""));
+    $$("#sisterRepetitionDays input[type=checkbox]").forEach(cb=>cb.checked = repetitionDays.has(cb.value));
 
     editingSisterSkills = {};
     if(sister){
@@ -1705,7 +1738,8 @@
     const payload = {
       name,
       active: $("#sisterActive").checked,
-      restr: $("#sisterRestr").value.trim() || "—"
+      restr: $("#sisterRestr").value.trim() || "—",
+      repetition_days: $$("#sisterRepetitionDays input[type=checkbox]").filter(cb=>cb.checked).map(cb=>cb.value)
     };
 
     let sisterId = editingSister?.id;

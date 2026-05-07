@@ -48,10 +48,11 @@ def init_db():
     );
 
     CREATE TABLE IF NOT EXISTS sisters (
-      id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      name    TEXT NOT NULL,
-      active  INTEGER NOT NULL DEFAULT 1,
-      restr   TEXT NOT NULL DEFAULT '—'
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      name            TEXT NOT NULL,
+      active          INTEGER NOT NULL DEFAULT 1,
+      restr           TEXT NOT NULL DEFAULT '—',
+      repetition_days TEXT NOT NULL DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS absences (
@@ -107,6 +108,7 @@ def init_db():
     ensure_column(conn, "tasks", "duration_minutes", "INTEGER NOT NULL DEFAULT 60")
 
     ensure_column(conn, "sisters", "restr", "TEXT NOT NULL DEFAULT '—'")
+    ensure_column(conn, "sisters", "repetition_days", "TEXT NOT NULL DEFAULT ''")
 
     conn.commit()
     conn.close()
