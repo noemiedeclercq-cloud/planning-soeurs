@@ -3188,6 +3188,13 @@ main{
     )).join("");
   }
 
+  async function printAbbessSheet(){
+    await loadAbbessForSelectedDay();
+    document.body.classList.remove("print-daily","print-weekly");
+    document.body.classList.add("print-abbess");
+    window.print();
+  }
+
   function dailyBlock(dayKey, moment, title){
     const slotKey = `${dayKey}-${moment}`;
     const items = (planning[slotKey]||[]).map(it=>{
@@ -3515,19 +3522,8 @@ main{
     window.print();
   });
 
-  $("#btnPdfAbbess").addEventListener("click", async ()=>{
-    await loadAbbessForSelectedDay();
-    document.body.classList.remove("print-daily","print-weekly");
-    document.body.classList.add("print-abbess");
-    window.print();
-  });
-
-  $("#btnPdfAbbessSister").addEventListener("click", async ()=>{
-    await loadAbbessForSelectedDay();
-    document.body.classList.remove("print-daily","print-weekly");
-    document.body.classList.add("print-abbess");
-    window.print();
-  });
+  $("#btnPdfAbbess").addEventListener("click", printAbbessSheet);
+  $("#btnPdfAbbessSister").addEventListener("click", printAbbessSheet);
 
   $("#btnGenerate").addEventListener("click", async ()=>{
     if(isLocked){ toast("Déverrouille avant de régénérer 🔓"); return; }
