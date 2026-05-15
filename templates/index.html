@@ -141,6 +141,127 @@
     background:#fbfcff;font-size:12px;font-weight:900;
   }
 
+  .sister-board{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;
+  }
+  .sister-workbench{
+    display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start;
+  }
+  .task-pool{
+    border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;
+    position:sticky;top:86px;
+  }
+  .task-pool-head{
+    padding:12px;border-bottom:1px solid var(--line);background:#fbfcff;
+    font-weight:900;display:flex;justify-content:space-between;gap:8px;
+  }
+  .task-pool-body{padding:10px;display:flex;flex-direction:column;gap:8px}
+  .pool-section-title{
+    font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+  }
+  .pool-task{
+    border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;
+  }
+  .pool-task-name{font-weight:900;font-size:13px}
+  .pool-task-meta{font-size:11px;color:var(--muted);font-weight:800;margin-top:3px}
+  .sister-card{
+    border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;
+  }
+  .sister-card.free{border-color:#bbf7d0}
+  .sister-card.busy{border-color:#fdba74}
+  .sister-card.absent{border-color:#fca5a5}
+  .sister-card.overloaded{border-color:#ef4444}
+  .sister-card-head{
+    padding:12px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;justify-content:space-between;gap:10px;background:#fbfcff;
+  }
+  .sister-card-name{font-weight:900}
+  .load-pill{
+    font-size:11px;font-weight:900;color:var(--muted);border:1px solid var(--line);
+    padding:5px 8px;border-radius:999px;background:#fff;white-space:nowrap;
+  }
+  .availability{
+    display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  }
+  .availability-pill{
+    border:1px solid var(--line);border-radius:10px;padding:7px;background:#f8fafc;
+    font-size:11px;font-weight:900;color:var(--muted);
+  }
+  .availability-pill.busy{background:#fff7ed;border-color:#fdba74;color:#92400e}
+  .availability-pill.absent{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+  .sister-card-body{padding:10px;display:flex;flex-direction:column;gap:8px}
+  .week-card-board{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;
+  }
+  .week-day-grid{display:grid;grid-template-columns:1fr;gap:7px}
+  .sister-day{
+    border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;
+  }
+  .sister-day.free{background:#f0fdf4;border-color:#bbf7d0}
+  .sister-day.busy{background:#fff7ed;border-color:#fdba74}
+  .sister-day.absent{background:#fef2f2;border-color:#fca5a5}
+  .sister-day-title{
+    font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+    margin-bottom:6px;
+  }
+  .sister-task-row{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:6px 0;border-top:1px dashed #e5e7eb;font-size:13px;
+  }
+  .sister-task-row:first-of-type{border-top:none}
+  .sister-task-main{font-weight:900;line-height:1.25}
+  .sister-task-meta{font-size:11px;color:var(--muted);font-weight:800;margin-top:2px}
+  .sister-add{
+    display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);
+  }
+  .sister-add .select{width:100%;min-width:0}
+  .add-row{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
+  .add-row .btn{width:100%}
+  .view-toggle{
+    display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;
+  }
+  .segbtn{
+    border:0;background:#fff;padding:10px 12px;font-size:13px;font-weight:900;
+    color:var(--muted);cursor:pointer;
+  }
+  .segbtn.active{background:#eef2ff;color:#1d4ed8}
+  .sister-week-view{display:none}
+  .sister-week-view.active{display:block}
+  .sister-day-view.hidden{display:none}
+  .week-table-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:#fff}
+  .week-sister-table{min-width:1120px;width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+  .week-sister-table th,.week-sister-table td{padding:10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;font-size:12px}
+  .week-sister-table th{background:#fbfcff;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .week-sister-table th:first-child,.week-sister-table td:first-child{position:sticky;left:0;background:#fff;z-index:1}
+  .week-sister-table th:nth-child(2),.week-sister-table td:nth-child(2){position:sticky;left:210px;background:#fff;z-index:1}
+  .sister-cell{display:flex;align-items:center;gap:10px}
+  .avatar{
+    width:38px;height:38px;border-radius:999px;display:grid;place-items:center;
+    color:#fff;font-weight:900;background:linear-gradient(135deg,#7c3aed,#60a5fa);
+  }
+  .week-sister-name{font-weight:900;font-size:13px;line-height:1.25}
+  .status-pill{
+    display:inline-flex;margin-top:6px;padding:4px 8px;border-radius:999px;
+    font-size:11px;font-weight:900;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;
+  }
+  .status-pill.free{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+  .status-pill.busy{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+  .status-pill.overloaded{background:#fff7ed;color:#c2410c;border-color:#fdba74}
+  .status-pill.absent{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+  .loadbar{height:7px;border-radius:999px;background:#eef2f7;overflow:hidden;margin:8px 0 5px}
+  .loadbar-fill{height:100%;border-radius:999px;background:#22c55e}
+  .loadbar-fill.warn{background:#f59e0b}
+  .loadbar-fill.bad{background:#ef4444}
+  .week-task-line{font-size:11px;line-height:1.25;margin-bottom:6px;padding:7px 8px;border-radius:9px;border:1px solid transparent}
+  .week-task-line:last-child{margin-bottom:0}
+  .week-task-time{font-weight:900;color:var(--muted)}
+  .week-task-line.am{background:#eff6ff;border-color:#dbeafe;color:#1d4ed8}
+  .week-task-line.pm{background:#f0fdf4;border-color:#dcfce7;color:#15803d}
+  .week-task-line.full{background:#f5f3ff;border-color:#ede9fe;color:#6d28d9}
+  .week-rest{display:block;text-align:center;padding:8px;border-radius:9px;background:#f3f4f6;color:#64748b;font-weight:900}
+  .week-absent{display:block;text-align:center;padding:8px;border-radius:9px;background:#fee2e2;color:#b91c1c;font-weight:900}
+  .week-free{display:block;text-align:center;padding:8px;color:#94a3b8;font-weight:900}
+
   .table-wrap{border:1px solid var(--line);border-radius:14px;overflow:auto;background:#fff;}
   .datatable{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;}
   .datatable th,.datatable td{
@@ -181,7 +302,16 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media (max-width:720px){
     .grid{grid-template-columns:1fr}
-    .tabs{display:none}
+    .topbar-inner{align-items:flex-start;flex-direction:column}
+    .tabs{margin-left:0;width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+    .tab{white-space:nowrap}
+    .controls{width:100%}
+    .controls .input,.controls .select,.controls .btn{width:100%}
+    .sister-workbench{grid-template-columns:1fr}
+    .task-pool{position:static;order:-1}
+    .sister-board{grid-template-columns:1fr}
+    .sister-add{grid-template-columns:1fr}
+    .add-row{grid-template-columns:1fr}
     table{min-width:900px}
   }
   label{
@@ -317,7 +447,8 @@
   <div class="topbar-inner">
     <div class="brand"><div class="logo">🕊️</div><div>Planning des tâches</div></div>
     <div class="tabs" id="tabs">
-      <div class="tab active" data-page="planning">Planning</div>
+      <div class="tab active" data-page="by-sister">Par sœur</div>
+      <div class="tab" data-page="planning">Par tâche</div>
       <div class="tab" data-page="tasks">Tâches</div>
       <div class="tab" data-page="sisters">Sœurs</div>
       <div class="tab" data-page="absences">Absences</div>
@@ -329,8 +460,57 @@
 </div>
 
 <main>
+  <!-- BY SISTER -->
+  <section class="page active" id="page-by-sister">
+    <div class="card">
+      <div class="card-head">
+        <h2>Planning par sœur</h2>
+        <div class="spacer"></div>
+        <div class="controls">
+          <div class="view-toggle" id="sisterViewToggle">
+            <button class="segbtn active" type="button" data-sister-mode="week">Vue semaine</button>
+            <button class="segbtn" type="button" data-sister-mode="day">Édition jour</button>
+          </div>
+          <input class="input" type="date" id="sisterWeekSelect" />
+          <input class="input" type="date" id="sisterDaySelect" />
+          <input class="input" id="sisterSearch" placeholder="Filtrer une sœur" />
+          <select class="select" id="sisterStatusFilter">
+            <option value="all">Toutes</option>
+            <option value="free">Libres</option>
+            <option value="busy">Avec tâches</option>
+            <option value="overloaded">Très chargées</option>
+            <option value="absent">Absentes</option>
+          </select>
+          <button class="btn primary" id="btnGenerateSister">Générer</button>
+          <button class="btn" id="btnSaveWeekSister">💾 Sauver semaine</button>
+          <button class="btn ghost" id="btnPdfAbbessSister">👑 Feuille Mère Abbesse</button>
+          <span class="pill ok" id="lockPillSister"><span class="mini"></span>Déverrouillé</span>
+        </div>
+        <div class="hint">Vue pensée pour partir des sœurs disponibles, puis leur répartir les tâches. Les données restent les mêmes que dans l’ancienne vue par tâche.</div>
+      </div>
+      <div class="card-body">
+        <div class="summarybar" id="sisterSummaryBar"></div>
+        <div class="sister-week-view active" id="sisterWeekView">
+          <div class="week-table-wrap">
+            <table class="week-sister-table" id="sisterWeekTable"></table>
+          </div>
+        </div>
+        <div class="sister-day-view hidden" id="sisterDayView">
+          <div class="sister-board" id="sisterBoard"></div>
+          <aside class="task-pool">
+            <div class="task-pool-head">
+              <span>Tâches à placer</span>
+              <span id="taskPoolDate"></span>
+            </div>
+            <div class="task-pool-body" id="taskPool"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- PLANNING -->
-  <section class="page active" id="page-planning">
+  <section class="page" id="page-planning">
     <div class="card">
       <div class="card-head">
         <h2>Planning</h2>
@@ -677,6 +857,7 @@
   let flatIssues = [];
   let currentIssueIndex = 0;
   let abbessRows = [];
+  let sisterViewMode = "week";
   async function apiGet(url){
     const r = await fetch(url);
     if(!r.ok) throw new Error(await r.text());
@@ -717,7 +898,12 @@
     go(tab.dataset.page);
   });
 
-  function weekISO(){ return $("#weekSelect").value; }
+  function weekISO(){ return $("#sisterWeekSelect")?.value || $("#weekSelect").value; }
+
+  function syncWeekInputs(value){
+    if($("#weekSelect")) $("#weekSelect").value = value;
+    if($("#sisterWeekSelect")) $("#sisterWeekSelect").value = value;
+  }
 
   function toLocalISODate(date){
     const y = date.getFullYear();
@@ -732,6 +918,12 @@
     $("#lockPill").innerHTML = isLocked
       ? `<span class="mini"></span>Verrouillé`
       : `<span class="mini"></span>Déverrouillé`;
+    if($("#lockPillSister")){
+      $("#lockPillSister").className = isLocked ? "pill locked" : "pill ok";
+      $("#lockPillSister").innerHTML = isLocked
+        ? `<span class="mini"></span>Verrouillé`
+        : `<span class="mini"></span>Déverrouillé`;
+    }
   }
 
   function dateForDay(dayKey){
@@ -746,6 +938,27 @@
     const d = new Date(iso + "T00:00:00");
     d.setDate(d.getDate() + days);
     return toLocalISODate(d);
+  }
+
+  function mondayForDateISO(iso){
+    const d = new Date(iso + "T00:00:00");
+    const dow = (d.getDay()+6)%7;
+    d.setDate(d.getDate()-dow);
+    return toLocalISODate(d);
+  }
+
+  function dayKeyFromDateISO(iso){
+    const d = new Date(iso + "T00:00:00");
+    return dayOrder[(d.getDay()+6)%7];
+  }
+
+  function selectedSisterDate(){
+    return $("#sisterDaySelect")?.value || $("#absenceDate").value || dateForDay("Mon");
+  }
+
+  function syncDayInputs(value){
+    if($("#sisterDaySelect")) $("#sisterDaySelect").value = value;
+    if($("#absenceDate")) $("#absenceDate").value = value;
   }
 
   function esc(s){
@@ -1026,6 +1239,7 @@
     renderFixedAssignments();
     hydrateSelects();
     renderPlanning();
+    renderSisterPlanning();
     await loadAbbessForSelectedDay();
   }
 
@@ -1401,6 +1615,406 @@
     buildWeeklyPrintPage();
   }
 
+  function taskFitsSlot(task, day, moment){
+    if(!Number(task.active)) return false;
+    if(task.moment !== "AM+PM" && task.moment !== moment) return false;
+    return parseCSV(task.days).includes(day);
+  }
+
+  function slotItemsFor(day, moment){
+    return planning[`${day}-${moment}`] || [];
+  }
+
+  function assignedCountFor(day, moment, taskId){
+    const item = slotItemsFor(day, moment).find(x=>Number(x.taskId) === Number(taskId));
+    return item ? (item.assigned || []).length : 0;
+  }
+
+  function renderSisterPlanning(){
+    const board = $("#sisterBoard");
+    if(!board) return;
+
+    $("#sisterDayView").classList.toggle("hidden", sisterViewMode !== "day");
+    $("#sisterWeekView").classList.toggle("active", sisterViewMode === "week");
+    $$("#sisterViewToggle .segbtn").forEach(btn=>btn.classList.toggle("active", btn.dataset.sisterMode === sisterViewMode));
+
+    const selectedDate = selectedSisterDate();
+    const selectedDay = dayKeyFromDateISO(selectedDate);
+    const selectedDateFR = new Date(selectedDate+"T00:00:00").toLocaleDateString("fr-BE", { weekday:"long", day:"numeric", month:"long" });
+    const activeSisters = sisters.filter(s=>Number(s.active));
+    const loads = {};
+    const rowsBySister = {};
+    const dayRowsBySister = {};
+    activeSisters.forEach(s=>{
+      loads[s.id] = 0;
+      rowsBySister[s.id] = [];
+      dayRowsBySister[s.id] = [];
+    });
+
+    for(const day of dayOrder){
+      for(const moment of ["AM","PM"]){
+        const slotKey = `${day}-${moment}`;
+        for(const item of (planning[slotKey] || [])){
+          const task = tasks.find(t=>Number(t.id) === Number(item.taskId));
+          if(!task) continue;
+          for(const sid of (item.assigned || [])){
+            if(!rowsBySister[sid]) continue;
+            loads[sid] += Number(task.duration_minutes || 60);
+            const row = { day, moment, slotKey, item, task };
+            rowsBySister[sid].push(row);
+            if(day === selectedDay) dayRowsBySister[sid].push(row);
+          }
+        }
+      }
+    }
+
+    const totalAssigned = Object.values(dayRowsBySister).reduce((sum, rows)=>sum + rows.length, 0);
+    $("#sisterSummaryBar").innerHTML = `
+      <span class="summarychip">Sœurs actives: ${activeSisters.length}</span>
+      <span class="summarychip">Tâches attribuées ce jour: ${totalAssigned}</span>
+      <span class="summarychip">${esc(selectedDateFR)}</span>
+      <span class="summarychip">Semaine du ${esc(new Date(weekISO()+"T00:00:00").toLocaleDateString("fr-BE"))}</span>
+    `;
+
+    renderSisterWeekView(rowsBySister, loads);
+    renderTaskPool(selectedDay, selectedDate);
+    board.innerHTML = "";
+    for(const sister of activeSisters){
+      const rows = dayRowsBySister[sister.id] || [];
+      const card = document.createElement("div");
+      card.className = "sister-card " + sisterCardStatus(rows, sister, selectedDate, selectedDay, loads[sister.id] || 0);
+      card.innerHTML = `
+        <div class="sister-card-head">
+          <div class="sister-card-name">${esc(sister.name)}</div>
+          <div class="load-pill">${Math.round((loads[sister.id] || 0) / 60 * 10) / 10} h</div>
+        </div>
+        <div class="sister-card-body">
+          ${sisterAvailabilityBlock(sister, selectedDate, selectedDay)}
+          ${sisterDayRows(sister, rows, selectedDay)}
+          ${sisterAddControls(sister, selectedDay)}
+        </div>
+      `;
+      board.appendChild(card);
+    }
+
+    $$(".sister-add").forEach(wrap=>hydrateSisterAddTaskSelect(wrap));
+
+    $$(".js-sister-remove").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        if(isLocked){ toast("Semaine verrouillée 🔒"); return; }
+        const slotKey = btn.dataset.slot;
+        const taskId = Number(btn.dataset.taskid);
+        const sisterId = Number(btn.dataset.sisterid);
+        const item = (planning[slotKey] || []).find(x=>Number(x.taskId) === taskId);
+        if(!item) return;
+        item.assigned = (item.assigned || []).filter(id=>Number(id) !== sisterId);
+        await saveWeek(false);
+        renderPlanning();
+        renderSisterPlanning();
+        toast("Tâche retirée");
+      });
+    });
+
+    $$(".js-sister-add").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        if(isLocked){ toast("Semaine verrouillée 🔒"); return; }
+        const sisterId = Number(btn.dataset.sisterid);
+        const wrap = btn.closest(".sister-add");
+        const day = wrap.dataset.day;
+        const moment = btn.dataset.moment;
+        const taskId = Number(wrap.querySelector(".js-add-task").value);
+        if(!taskId) return toast("Choisis une tâche");
+        const task = tasks.find(t=>Number(t.id) === taskId);
+        if(!task || !taskFitsSlot(task, day, moment)) return toast("Cette tâche n'est pas prévue sur ce créneau");
+        if(isAbsent(sisterId, selectedSisterDate(), moment)) return toast("Cette sœur est absente");
+        if(isInRepetition(sisterId, day, moment, task)) return toast("Cette sœur est en répétition");
+        const slotKey = `${day}-${moment}`;
+        if(!planning[slotKey]) planning[slotKey] = [];
+        let item = planning[slotKey].find(x=>Number(x.taskId) === taskId);
+        if(!item){
+          planning[slotKey].push({ taskId, assigned: [] });
+          item = planning[slotKey][planning[slotKey].length - 1];
+        }
+        if(!(item.assigned || []).some(id=>Number(id) === sisterId)){
+          item.assigned = (item.assigned || []).concat([sisterId]);
+        }
+        await saveWeek(false);
+        renderPlanning();
+        renderSisterPlanning();
+        toast("Tâche ajoutée");
+      });
+    });
+
+    $$(".js-add-task").forEach(sel=>{
+      sel.addEventListener("change", ()=>{
+        const wrap = sel.closest(".sister-add");
+        hydrateSisterAddTaskSelect(wrap);
+      });
+    });
+  }
+
+  function renderTaskPool(day, dateISO){
+    const pool = $("#taskPool");
+    if(!pool) return;
+    $("#taskPoolDate").textContent = dayLabels[day] || "";
+    let html = "";
+    for(const moment of ["AM","PM"]){
+      const missing = tasks
+        .filter(t=>taskFitsSlot(t, day, moment))
+        .map(t=>({ task:t, assigned:assignedCountFor(day, moment, t.id), expected:Math.max(1, Number(t.people || 1)) }))
+        .filter(x=>x.assigned < x.expected)
+        .sort((a,b)=>Number(a.task.prio || 2) - Number(b.task.prio || 2) || a.task.name.localeCompare(b.task.name, "fr"));
+      html += `<div class="pool-section-title">${moment === "AM" ? "Matin" : "Après-midi"}</div>`;
+      if(!missing.length){
+        html += `<div class="pool-task"><div class="pool-task-meta">Tout est placé.</div></div>`;
+      }else{
+        html += missing.map(x=>`
+          <div class="pool-task">
+            <div class="pool-task-name">${esc(x.task.name)}</div>
+            <div class="pool-task-meta">${x.assigned}/${x.expected} · ${esc(normalizeTimeLabel(x.task.time_label, x.task.moment))} · ${Number(x.task.duration_minutes || 0)} min</div>
+          </div>
+        `).join("");
+      }
+    }
+    pool.innerHTML = html;
+  }
+
+  function renderSisterWeekCards(rowsBySister, loads){
+    const board = $("#sisterWeekCards");
+    if(!board) return;
+
+    const activeSisters = sisters.filter(s=>Number(s.active));
+    board.innerHTML = activeSisters.map(sister=>{
+      const rows = rowsBySister[sister.id] || [];
+      const status = sisterWeekStatus(rows, loads[sister.id] || 0);
+      return `<section class="sister-card ${status}">
+        <div class="sister-card-head">
+          <div>
+            <div class="sister-card-name">${esc(sister.name)}</div>
+            <div class="sister-task-meta">${esc(sisterWeekStatusLabel(status))}</div>
+          </div>
+          <div class="load-pill">${Math.round((loads[sister.id] || 0) / 60 * 10) / 10} h semaine</div>
+        </div>
+        <div class="sister-card-body">
+          <div class="week-day-grid">
+            ${dayOrder.map(day=>sisterWeekDayBlock(sister, rows, day)).join("")}
+          </div>
+        </div>
+      </section>`;
+    }).join("");
+  }
+
+  function sisterRowsForDay(rows, day){
+    return rows.filter(row=>row.day === day).sort((a,b)=>{
+      if(a.moment !== b.moment) return a.moment.localeCompare(b.moment);
+      return timeLabelToMinutes(a.task.time_label, a.task.moment) - timeLabelToMinutes(b.task.time_label, b.task.moment);
+    });
+  }
+
+  function sisterWeekDayBlock(sister, rows, day){
+    const dateISO = dateForDay(day);
+    const dayRows = sisterRowsForDay(rows, day);
+    const amAbsent = isAbsent(sister.id, dateISO, "AM");
+    const pmAbsent = isAbsent(sister.id, dateISO, "PM");
+    const repetition = sisterRepetitionDays(sister.id).includes(day);
+    const status = (amAbsent && pmAbsent) ? "absent" : dayRows.length ? "busy" : "free";
+    const lines = dayRows.length ? dayRows.map(row=>{
+      const rot = rotationLabelForTask(row.task, weekISO(), row.day);
+      const name = rot ? `${row.task.name} (${rot})` : row.task.name;
+      return `<div class="sister-task-row">
+        <div>
+          <div class="sister-task-main">${esc(name)}</div>
+          <div class="sister-task-meta">${esc(row.moment)} · ${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))}</div>
+        </div>
+      </div>`;
+    }).join("") : `<div class="hint">${status === "absent" ? "Absente" : repetition ? "Répétition PM" : "Libre"}</div>`;
+    const badges = [
+      amAbsent ? "AM absent" : null,
+      pmAbsent ? "PM absent" : null,
+      repetition ? "PM répétition" : null
+    ].filter(Boolean).map(x=>`<span class="mini-tag">${esc(x)}</span>`).join("");
+    return `<div class="sister-day ${status}">
+      <div class="sister-day-title">${esc(dayNamesFR[day])}</div>
+      ${badges ? `<div class="task-meta" style="margin-bottom:4px">${badges}</div>` : ""}
+      ${lines}
+    </div>`;
+  }
+
+  function sisterWeekStatus(rows, minutes){
+    if(minutes >= 8 * 60) return "overloaded";
+    if(!rows.length) return "free";
+    return "busy";
+  }
+
+  function sisterWeekStatusLabel(status){
+    if(status === "overloaded") return "Très chargée";
+    if(status === "free") return "Libre cette semaine";
+    return "Travaille cette semaine";
+  }
+
+  function sisterInitials(name){
+    const parts = String(name || "").replace(/^sœur\s+/i, "").split(/[\s-]+/).filter(Boolean);
+    return parts.slice(0,2).map(p=>p[0]).join("").toUpperCase() || "?";
+  }
+
+  function sisterCardStatus(rows, sister, dateISO, day, minutes){
+    if(isAbsent(sister.id, dateISO, "AM") && isAbsent(sister.id, dateISO, "PM")) return "absent";
+    if(minutes >= 8 * 60) return "overloaded";
+    if(!rows.length) return "free";
+    return "busy";
+  }
+
+  function renderSisterWeekView(rowsBySister, loads){
+    const table = $("#sisterWeekTable");
+    if(!table) return;
+
+    const header = `<thead><tr>
+      <th style="width:210px;">Sœurs</th>
+      <th style="width:130px;">Charge</th>
+      ${dayOrder.map(day=>`<th>${esc(dayNamesFR[day])}<div class="sister-task-meta">${esc(dateForDay(day).slice(5).replace("-","/"))}</div></th>`).join("")}
+    </tr></thead>`;
+
+    const activeSisters = sisters.filter(s=>Number(s.active));
+    const search = ($("#sisterSearch")?.value || "").trim().toLowerCase();
+    const statusFilter = $("#sisterStatusFilter")?.value || "all";
+    const body = activeSisters.map(sister=>{
+      const rows = rowsBySister[sister.id] || [];
+      const status = sisterWeekStatus(rows, loads[sister.id] || 0);
+      if(search && !String(sister.name || "").toLowerCase().includes(search)) return "";
+      if(statusFilter !== "all" && status !== statusFilter) return "";
+      const cells = dayOrder.map(day=>{
+        const dateISO = dateForDay(day);
+        const dayRows = sisterRowsForDay(rows, day);
+        const fullAbsent = isAbsent(sister.id, dateISO, "AM") && isAbsent(sister.id, dateISO, "PM");
+        const repetition = sisterRepetitionDays(sister.id).includes(day);
+        if(fullAbsent) return `<td><span class="week-absent">Absente</span></td>`;
+        if(!dayRows.length) return `<td><span class="${repetition ? "week-rest" : "week-free"}">${repetition ? "Répétition PM" : "Libre"}</span></td>`;
+        return `<td>${dayRows.map(row=>{
+          const rot = rotationLabelForTask(row.task, weekISO(), row.day);
+          const name = rot ? `${row.task.name} (${rot})` : row.task.name;
+          const cls = row.moment === "AM" ? "am" : row.moment === "PM" ? "pm" : "full";
+          return `<div class="week-task-line ${cls}" title="${esc(name)}">
+            <span class="week-task-time">${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))}</span>
+            ${esc(name)}
+          </div>`;
+        }).join("")}</td>`;
+      }).join("");
+      const load = Math.round((loads[sister.id] || 0) / 60 * 10) / 10;
+      const pct = Math.min(100, Math.round(((loads[sister.id] || 0) / (8 * 60)) * 100));
+      const fillClass = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
+      return `<tr>
+        <td>
+          <div class="sister-cell">
+            <div class="avatar">${esc(sisterInitials(sister.name))}</div>
+            <div>
+              <div class="week-sister-name">${esc(sister.name)}</div>
+              <span class="status-pill ${status}">${esc(sisterWeekStatusLabel(status))}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight:900">${load} h</div>
+          <div class="loadbar"><div class="loadbar-fill ${fillClass}" style="width:${pct}%"></div></div>
+          <div class="sister-task-meta">${pct}%</div>
+        </td>
+        ${cells}
+      </tr>`;
+    }).join("");
+
+    table.innerHTML = `${header}<tbody>${body || `<tr><td colspan="9"><span class="week-free">Aucune sœur ne correspond aux filtres.</span></td></tr>`}</tbody>`;
+  }
+
+  function sisterAvailabilityBlock(sister, dateISO, day){
+    const amAbsent = isAbsent(sister.id, dateISO, "AM");
+    const pmAbsent = isAbsent(sister.id, dateISO, "PM");
+    const repetition = sisterRepetitionDays(sister.id).includes(day);
+    const amClass = amAbsent ? " absent" : "";
+    const pmClass = pmAbsent ? " absent" : repetition ? " busy" : "";
+    const pmText = pmAbsent ? "PM absent" : repetition ? "PM répétition" : "PM disponible";
+    return `<div class="availability">
+      <div class="availability-pill${amClass}">${amAbsent ? "AM absent" : "AM disponible"}</div>
+      <div class="availability-pill${pmClass}">${pmText}</div>
+    </div>`;
+  }
+
+  function sisterDayRows(sister, rows, day){
+    if(!rows.length){
+      return `<div class="sister-day"><div class="sister-day-title">${esc(dayNamesFR[day])}</div><div class="hint">Aucune tâche ce jour.</div></div>`;
+    }
+    const byMoment = { AM: [], PM: [] };
+    for(const row of rows){
+      if(row.moment === "AM") byMoment.AM.push(row);
+      else byMoment.PM.push(row);
+    }
+    return ["AM","PM"].map(moment=>{
+      const rowsForMoment = byMoment[moment].sort((a,b)=>
+        timeLabelToMinutes(a.task.time_label, a.task.moment) - timeLabelToMinutes(b.task.time_label, b.task.moment)
+      );
+      const lines = rowsForMoment.length ? rowsForMoment.map(row=>{
+        const rot = rotationLabelForTask(row.task, weekISO(), row.day);
+        const name = rot ? `${row.task.name} (${rot})` : row.task.name;
+        const remove = isLocked ? "" : `<button class="iconbtn js-sister-remove" title="Retirer" data-sisterid="${sister.id}" data-slot="${row.slotKey}" data-taskid="${row.task.id}">×</button>`;
+        return `<div class="sister-task-row">
+          <div>
+            <div class="sister-task-main">${esc(name)}</div>
+            <div class="sister-task-meta">${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))} · ${Number(row.task.duration_minutes || 0)} min</div>
+          </div>
+          ${remove}
+        </div>`;
+      }).join("") : `<div class="hint">Aucune tâche</div>`;
+      return `<div class="sister-day"><div class="sister-day-title">${moment === "AM" ? "Matin" : "Après-midi"}</div>${lines}</div>`;
+    }).join("");
+  }
+
+  function sisterWeekRows(sister, rows){
+    if(!rows.length){
+      return `<div class="sister-day"><div class="sister-day-title">Aucune tâche</div><div class="hint">Ajoute une tâche ci-dessous.</div></div>`;
+    }
+    const byDay = {};
+    for(const row of rows){
+      byDay[row.day] ||= [];
+      byDay[row.day].push(row);
+    }
+    return dayOrder.filter(day=>byDay[day]).map(day=>{
+      const lines = byDay[day].sort((a,b)=>{
+        if(a.moment !== b.moment) return a.moment.localeCompare(b.moment);
+        return timeLabelToMinutes(a.task.time_label, a.task.moment) - timeLabelToMinutes(b.task.time_label, b.task.moment);
+      }).map(row=>{
+        const rot = rotationLabelForTask(row.task, weekISO(), row.day);
+        const name = rot ? `${row.task.name} (${rot})` : row.task.name;
+        const remove = isLocked ? "" : `<button class="iconbtn js-sister-remove" title="Retirer" data-sisterid="${sister.id}" data-slot="${row.slotKey}" data-taskid="${row.task.id}">×</button>`;
+        return `<div class="sister-task-row">
+          <div>
+            <div class="sister-task-main">${esc(name)}</div>
+            <div class="sister-task-meta">${esc(row.moment)} · ${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))} · ${Number(row.task.duration_minutes || 0)} min</div>
+          </div>
+          ${remove}
+        </div>`;
+      }).join("");
+      return `<div class="sister-day"><div class="sister-day-title">${esc(dayNamesFR[day])}</div>${lines}</div>`;
+    }).join("");
+  }
+
+  function sisterAddControls(sister, day){
+    return `<div class="sister-add" data-sisterid="${sister.id}" data-day="${day}">
+      <select class="select js-add-task"></select>
+      <div class="add-row">
+        <button class="btn green js-sister-add" data-sisterid="${sister.id}" data-moment="AM">+ Matin</button>
+        <button class="btn green js-sister-add" data-sisterid="${sister.id}" data-moment="PM">+ Après-midi</button>
+      </div>
+    </div>`;
+  }
+
+  function hydrateSisterAddTaskSelect(wrap){
+    const day = wrap.dataset.day;
+    const select = wrap.querySelector(".js-add-task");
+    const options = tasks
+      .filter(t=>taskFitsSlot(t, day, "AM") || taskFitsSlot(t, day, "PM"))
+      .sort((a,b)=>Number(a.prio || 2) - Number(b.prio || 2) || a.name.localeCompare(b.name, "fr"))
+      .map(t=>`<option value="${t.id}">${esc(t.name)} · ${esc(t.moment)}</option>`);
+    select.innerHTML = options.length ? options.join("") : `<option value="">Aucune tâche</option>`;
+  }
+
   function buildDailyPrintPages(){
     const container = $("#printDaily");
     const week = weekISO();
@@ -1630,6 +2244,7 @@
     await saveWeek(false);
     closeEdit();
     renderPlanning();
+    renderSisterPlanning();
     toast("Affectation enregistrée");
   });
 
@@ -1830,10 +2445,27 @@
     window.print();
   });
 
+  $("#btnPdfAbbessSister").addEventListener("click", async ()=>{
+    await loadAbbessForSelectedDay();
+    document.body.classList.remove("print-daily","print-weekly");
+    document.body.classList.add("print-abbess");
+    window.print();
+  });
+
   $("#btnGenerate").addEventListener("click", async ()=>{
     if(isLocked){ toast("Déverrouille avant de régénérer 🔓"); return; }
     generatePlanningSmart();
     renderPlanning();
+    renderSisterPlanning();
+    await saveWeek(false);
+    toast("Planning généré");
+  });
+
+  $("#btnGenerateSister").addEventListener("click", async ()=>{
+    if(isLocked){ toast("Déverrouille avant de régénérer 🔓"); return; }
+    generatePlanningSmart();
+    renderPlanning();
+    renderSisterPlanning();
     await saveWeek(false);
     toast("Planning généré");
   });
@@ -1843,6 +2475,21 @@
     toast("Semaine sauvegardée");
   });
 
+  $("#btnSaveWeekSister").addEventListener("click", async ()=>{
+    await saveWeek(isLocked);
+    toast("Semaine sauvegardée");
+  });
+
+  $("#sisterViewToggle").addEventListener("click",(e)=>{
+    const btn = e.target.closest("[data-sister-mode]");
+    if(!btn) return;
+    sisterViewMode = btn.dataset.sisterMode;
+    renderSisterPlanning();
+  });
+
+  $("#sisterSearch").addEventListener("input", renderSisterPlanning);
+  $("#sisterStatusFilter").addEventListener("change", renderSisterPlanning);
+
   $("#btnCloneNext").addEventListener("click", async ()=>{
     const w = weekISO();
     if(!w) return toast("Choisis une semaine");
@@ -1851,7 +2498,7 @@
 
     await apiPost("/api/plans/" + encodeURIComponent(w) + "/clone_next", {});
     const next = addDaysISO(w, 7);
-    $("#weekSelect").value = next;
+    syncWeekInputs(next);
     await reloadAll();
     toast("Semaine dupliquée ✅");
   });
@@ -1872,14 +2519,31 @@
   $("#issuesPill").addEventListener("click", goToNextIssue);
 
   $("#weekSelect").addEventListener("change", async ()=>{
+    syncWeekInputs($("#weekSelect").value);
     await reloadAll();
     toast("Semaine chargée");
   });
 
+  $("#sisterWeekSelect").addEventListener("change", async ()=>{
+    syncWeekInputs($("#sisterWeekSelect").value);
+    await reloadAll();
+    toast("Semaine chargée");
+  });
+
+  $("#sisterDaySelect").addEventListener("change", async ()=>{
+    const selected = $("#sisterDaySelect").value;
+    syncDayInputs(selected);
+    syncWeekInputs(mondayForDateISO(selected));
+    await reloadAll();
+    toast("Jour chargé");
+  });
+
   $("#absenceDate").addEventListener("change", async ()=>{
+    syncDayInputs($("#absenceDate").value);
     await reloadAbsencesForDate($("#absenceDate").value);
     await reloadPlanIssues();
     renderPlanning();
+    renderSisterPlanning();
     await loadAbbessForSelectedDay();
     toast("Absences chargées");
   });
@@ -1894,8 +2558,8 @@
     const dow = (today.getDay()+6)%7;
     const monday = new Date(today);
     monday.setDate(today.getDate()-dow);
-    $("#weekSelect").value = toLocalISODate(monday);
-    $("#absenceDate").value = toLocalISODate(today);
+    syncWeekInputs(toLocalISODate(monday));
+    syncDayInputs(toLocalISODate(today));
   })();
 
   reloadAll().catch(err=>{
