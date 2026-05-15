@@ -439,6 +439,954 @@
     .ab-empty{color:#6b7280;font-weight:800}
     .ab-footer{margin-top:10px;font-size:10px;color:#374151;font-weight:800}
   }
+
+/* =========================================================
+   UI MODERNE "VUE PAR SŒUR" — proche du visuel de référence
+   ========================================================= */
+
+:root{
+  --bg:#ffffff;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e8edf5;
+  --accent:#7c3aed;
+  --accent2:#7c3aed;
+  --warn:#f59e0b;
+  --shadow:0 10px 30px rgba(15,23,42,.04);
+  --radius:18px;
+}
+
+body{
+  background:#ffffff;
+  color:#0f172a;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Barre supérieure */
+.topbar{
+  background:#fff;
+  border-bottom:1px solid #eef2f7;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+
+.topbar-inner{
+  max-width:none;
+  height:58px;
+  padding:0 24px;
+}
+
+.brand{
+  font-weight:700;
+  font-size:16px;
+  color:#111827;
+}
+
+.brand .logo{
+  width:34px;
+  height:34px;
+  border:none;
+  background:transparent;
+  font-size:23px;
+}
+
+.tabs{
+  height:58px;
+  align-items:center;
+  gap:2px;
+  margin-left:22px;
+}
+
+.tab{
+  height:58px;
+  display:inline-flex;
+  align-items:center;
+  border-radius:0;
+  padding:0 17px;
+  border:none;
+  color:#475569;
+  font-weight:600;
+  font-size:14px;
+}
+
+.tab.active{
+  background:#faf5ff;
+  color:#7c3aed;
+  border:none;
+  border-bottom:2px solid #7c3aed;
+}
+
+a.tab{
+  height:auto;
+  border-radius:12px;
+  padding:10px 14px;
+}
+
+/* Mise en page générale */
+main{
+  max-width:none;
+  margin:0;
+  padding:30px 24px 84px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:20px;
+  box-shadow:0 6px 24px rgba(15,23,42,.035);
+}
+
+/* La vue par sœur devient une page tableau moderne */
+#page-by-sister .card{
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  border-radius:0;
+}
+
+#page-by-sister .card-head{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:18px;
+  padding:0 0 20px;
+  border-bottom:none;
+}
+
+#page-by-sister .card-head h2{
+  grid-column:1;
+  order:2;
+  margin:26px 0 0;
+  font-size:24px;
+  line-height:1.2;
+  letter-spacing:-.035em;
+  font-weight:750;
+  color:#0f172a;
+}
+
+#page-by-sister .card-head .spacer{
+  display:none;
+}
+
+#page-by-sister .card-head > .hint{
+  grid-column:1;
+  order:3;
+  margin:0;
+  font-size:14px;
+  color:#64748b;
+  font-weight:400;
+}
+
+/* Barre d'outils */
+#page-by-sister .controls{
+  grid-column:1 / -1;
+  order:1;
+  display:grid;
+  grid-template-columns:auto auto auto 1fr auto auto;
+  align-items:center;
+  gap:12px;
+  width:100%;
+}
+
+#sisterViewToggle{
+  justify-self:center;
+  grid-column:3 / 5;
+}
+
+#sisterWeekSelect{
+  grid-column:1;
+  width:190px;
+}
+
+#sisterDaySelect{
+  grid-column:2;
+  width:150px;
+}
+
+#btnSaveWeekSister{
+  grid-column:6;
+  background:#7c3aed;
+  color:#fff;
+  border-color:#7c3aed;
+  padding-inline:18px;
+}
+
+#btnPdfAbbessSister{
+  grid-column:5;
+}
+
+#lockPillSister,
+#btnGenerateSister,
+#sisterSearch,
+#sisterStatusFilter{
+  display:none!important;
+}
+
+.input,.select{
+  border:1px solid #e5eaf2;
+  border-radius:12px;
+  padding:11px 14px;
+  background:#fff;
+  color:#0f172a;
+  font-size:14px;
+  box-shadow:none;
+}
+
+.btn{
+  border-radius:12px;
+  padding:11px 15px;
+  font-weight:650;
+  font-size:14px;
+  box-shadow:none;
+}
+
+.btn.primary,.btn.green{
+  background:#7c3aed;
+  border-color:#7c3aed;
+  color:#fff;
+}
+
+.btn.ghost{
+  background:#fff;
+  border:1px solid #e5eaf2;
+  color:#475569;
+}
+
+.view-toggle{
+  display:inline-flex;
+  border:1px solid #e5eaf2;
+  border-radius:13px;
+  padding:3px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(15,23,42,.03);
+}
+
+.segbtn{
+  border-radius:10px;
+  padding:9px 16px;
+  font-size:14px;
+  font-weight:650;
+  color:#334155;
+}
+
+.segbtn.active{
+  background:#f3e8ff;
+  color:#7c3aed;
+}
+
+/* Résumé */
+.card-body{
+  padding:0;
+}
+
+#sisterSummaryBar{
+  margin:0 0 18px;
+  gap:10px;
+}
+
+.summarychip{
+  border:1px solid #e8edf5;
+  background:#fff;
+  border-radius:999px;
+  padding:9px 13px;
+  color:#64748b;
+  font-size:13px;
+  font-weight:650;
+}
+
+/* Tableau semaine */
+.week-table-wrap{
+  border:1px solid #e6ebf2;
+  border-radius:16px;
+  overflow:auto;
+  background:#fff;
+  box-shadow:0 8px 30px rgba(15,23,42,.035);
+}
+
+.week-sister-table{
+  min-width:1320px;
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+}
+
+.week-sister-table th,
+.week-sister-table td{
+  border-right:1px solid #e6ebf2;
+  border-bottom:1px solid #e6ebf2;
+  padding:18px 12px;
+  vertical-align:middle;
+}
+
+.week-sister-table th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#fbfcfe;
+  color:#334155;
+  text-align:center;
+  font-size:12px;
+  font-weight:750;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.week-sister-table th:first-child,
+.week-sister-table td:first-child{
+  width:220px;
+  position:sticky;
+  left:0;
+  z-index:3;
+  background:#fff;
+}
+
+.week-sister-table th:nth-child(2),
+.week-sister-table td:nth-child(2){
+  width:135px;
+  position:sticky;
+  left:220px;
+  z-index:3;
+  background:#fff;
+  text-align:center;
+}
+
+.week-sister-table td{
+  min-height:118px;
+  height:118px;
+  background:#fff;
+  font-size:13px;
+}
+
+.sister-cell{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.avatar{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  border-radius:999px;
+  font-size:16px;
+  font-weight:800;
+  color:#fff;
+  box-shadow:0 10px 24px rgba(124,58,237,.18);
+}
+
+.week-sister-name{
+  font-size:15px;
+  line-height:1.35;
+  font-weight:750;
+  color:#0f172a;
+}
+
+.status-pill{
+  border:none;
+  margin-top:8px;
+  padding:6px 10px;
+  font-size:12px;
+  font-weight:650;
+  background:#f8fafc;
+  color:#475569;
+}
+
+.status-pill.free,
+.status-pill.busy{
+  background:#f8fafc;
+  color:#475569;
+}
+
+.status-pill.overloaded{
+  background:#fff7ed;
+  color:#ea580c;
+}
+
+.status-pill.absent{
+  background:#fee2e2;
+  color:#dc2626;
+}
+
+.loadbar{
+  height:7px;
+  border-radius:999px;
+  background:#edf2f7;
+  overflow:hidden;
+  margin:10px auto 6px;
+  width:78px;
+}
+
+.loadbar-fill{
+  height:100%;
+  border-radius:999px;
+  background:#22c55e;
+}
+
+.loadbar-fill.warn{
+  background:#f59e0b;
+}
+
+.loadbar-fill.bad{
+  background:#ef4444;
+}
+
+.sister-task-meta{
+  font-size:12px;
+  color:#64748b;
+  font-weight:500;
+}
+
+.week-task-line{
+  display:block;
+  border:none;
+  border-radius:10px;
+  padding:10px 11px;
+  margin-bottom:8px;
+  font-size:13px;
+  line-height:1.28;
+  font-weight:700;
+}
+
+.week-task-line:last-child{
+  margin-bottom:0;
+}
+
+.week-task-time{
+  display:inline;
+  margin-right:4px;
+  color:inherit;
+  opacity:.95;
+  font-weight:800;
+}
+
+.week-task-line.am{
+  background:#eef5ff;
+  color:#2563eb;
+}
+
+.week-task-line.pm{
+  background:#eefbf2;
+  color:#16a34a;
+}
+
+.week-task-line.full{
+  background:#f3e8ff;
+  color:#7c3aed;
+}
+
+.week-rest{
+  display:block;
+  text-align:center;
+  padding:10px;
+  border-radius:10px;
+  background:#f4f5f7;
+  color:#64748b;
+  font-size:13px;
+  font-weight:500;
+}
+
+.week-absent{
+  display:block;
+  text-align:center;
+  padding:10px;
+  border-radius:10px;
+  background:#fee2e2;
+  color:#dc2626;
+  font-size:13px;
+  font-weight:700;
+}
+
+.week-free{
+  display:block;
+  text-align:center;
+  padding:10px;
+  color:#94a3b8;
+  font-size:18px;
+  font-weight:500;
+}
+
+/* Footer équilibre */
+.sister-balance-footer{
+  margin-top:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  padding:18px 18px;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 30px rgba(15,23,42,.04);
+}
+
+.sister-balance-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:17px;
+  font-weight:750;
+  color:#111827;
+}
+
+.sister-balance-title strong{
+  color:#16a34a;
+}
+
+.sister-balance-sub{
+  margin-top:4px;
+  color:#94a3b8;
+  font-size:14px;
+}
+
+.sister-balance-actions{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.sister-balance-actions .btn-outline-purple{
+  border:1px solid #7c3aed;
+  color:#7c3aed;
+  background:#fff;
+}
+
+.sister-balance-actions .btn-purple{
+  border:1px solid #7c3aed;
+  color:#fff;
+  background:#7c3aed;
+}
+
+/* Anciennes pages moins agressives */
+#page-planning .card,
+#page-tasks .card,
+#page-sisters .card,
+#page-absences .card,
+#page-assignments .card{
+  border-color:#eef2f7;
+  box-shadow:0 6px 24px rgba(15,23,42,.035);
+}
+
+/* Mobile */
+@media (max-width:900px){
+  main{
+    padding:18px 14px 72px;
+  }
+
+  .topbar-inner{
+    height:auto;
+    padding:12px 14px;
+    flex-wrap:wrap;
+  }
+
+  .tabs{
+    height:auto;
+    margin-left:0;
+    width:100%;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+  }
+
+  .tab{
+    height:42px;
+    white-space:nowrap;
+    padding:0 12px;
+  }
+
+  #page-by-sister .controls{
+    display:flex;
+    align-items:stretch;
+  }
+
+  #page-by-sister .controls .input,
+  #page-by-sister .controls .btn,
+  #page-by-sister .controls .view-toggle{
+    width:100%;
+  }
+
+  #sisterViewToggle{
+    justify-content:center;
+  }
+
+  #page-by-sister .card-head h2{
+    font-size:21px;
+    margin-top:10px;
+  }
+
+  .week-sister-table{
+    min-width:1180px;
+  }
+
+  .sister-balance-footer{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .sister-balance-actions{
+    width:100%;
+    flex-direction:column;
+  }
+
+  .sister-balance-actions .btn{
+    width:100%;
+  }
+}
+
+
+/* === VUE JOUR PAR SŒUR — DESIGN MODERNE === */
+.sister-day-view:not(.hidden){
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;
+  gap:18px;
+  align-items:start;
+}
+
+.sister-day-view.hidden{
+  display:none!important;
+}
+
+#sisterDayView .sister-board{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+  gap:16px;
+}
+
+.day-sister-card{
+  background:#fff;
+  border:1px solid #e6ebf2;
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 8px 30px rgba(15,23,42,.035);
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+.day-sister-card:hover{
+  transform:translateY(-1px);
+  box-shadow:0 14px 34px rgba(15,23,42,.055);
+  border-color:#ddd6fe;
+}
+
+.day-sister-card.absent{
+  border-color:#fecaca;
+}
+
+.day-sister-card.overloaded{
+  border-color:#fed7aa;
+}
+
+.day-sister-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:16px 16px 14px;
+  border-bottom:1px solid #eef2f7;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+}
+
+.day-sister-identity{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+
+.day-sister-name{
+  font-size:16px;
+  line-height:1.28;
+  font-weight:750;
+  color:#0f172a;
+}
+
+.day-sister-sub{
+  margin-top:4px;
+  font-size:12px;
+  font-weight:600;
+  color:#94a3b8;
+}
+
+.day-sister-load{
+  min-width:92px;
+  text-align:right;
+}
+
+.day-load-value{
+  font-size:15px;
+  font-weight:800;
+  color:#0f172a;
+}
+
+.day-load-label{
+  margin-top:3px;
+  font-size:12px;
+  font-weight:650;
+  color:#16a34a;
+}
+
+.day-load-label.warn{
+  color:#f59e0b;
+}
+
+.day-load-label.bad{
+  color:#ef4444;
+}
+
+.day-sister-body{
+  padding:14px;
+}
+
+.day-availability{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:12px;
+}
+
+.day-availability-pill{
+  border-radius:999px;
+  padding:8px 10px;
+  text-align:center;
+  font-size:12px;
+  font-weight:700;
+  background:#f8fafc;
+  color:#475569;
+}
+
+.day-availability-pill.available{
+  background:#ecfdf5;
+  color:#16a34a;
+}
+
+.day-availability-pill.busy{
+  background:#fff7ed;
+  color:#ea580c;
+}
+
+.day-availability-pill.absent{
+  background:#fee2e2;
+  color:#dc2626;
+}
+
+.day-columns{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.day-slot{
+  min-height:132px;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  padding:12px;
+  background:#fbfcff;
+}
+
+.day-slot-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+  font-size:12px;
+  font-weight:800;
+  color:#334155;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.day-slot-dot{
+  width:9px;
+  height:9px;
+  border-radius:999px;
+  display:inline-block;
+  margin-right:6px;
+}
+
+.day-slot-dot.am{
+  background:#3b82f6;
+}
+
+.day-slot-dot.pm{
+  background:#22c55e;
+}
+
+.day-task-card{
+  position:relative;
+  border-radius:13px;
+  padding:10px 11px;
+  margin-bottom:8px;
+  font-size:13px;
+  font-weight:750;
+  line-height:1.28;
+}
+
+.day-task-card:last-child{
+  margin-bottom:0;
+}
+
+.day-task-card.am{
+  background:#eef5ff;
+  color:#2563eb;
+}
+
+.day-task-card.pm{
+  background:#eefbf2;
+  color:#16a34a;
+}
+
+.day-task-card.absent{
+  background:#fee2e2;
+  color:#dc2626;
+  text-align:center;
+}
+
+.day-task-card.empty{
+  background:#f4f5f7;
+  color:#94a3b8;
+  text-align:center;
+  font-weight:650;
+}
+
+.day-task-meta{
+  margin-top:4px;
+  font-size:11px;
+  font-weight:650;
+  opacity:.78;
+}
+
+.day-remove{
+  position:absolute;
+  top:7px;
+  right:7px;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,.76);
+  color:inherit;
+  cursor:pointer;
+  font-weight:900;
+  line-height:1;
+}
+
+.day-remove:hover{
+  background:#fff;
+}
+
+.day-add-panel{
+  margin-top:12px;
+  padding:12px;
+  border:1px dashed #ddd6fe;
+  border-radius:16px;
+  background:#faf5ff;
+}
+
+.day-add-title{
+  margin-bottom:8px;
+  font-size:12px;
+  font-weight:800;
+  color:#7c3aed;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.day-add-panel .sister-add{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin:0;
+  padding:0;
+  border-top:0;
+}
+
+.day-add-panel .add-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.day-add-panel .btn.green{
+  background:#7c3aed;
+  border-color:#7c3aed;
+  color:#fff;
+  padding:9px 10px;
+  font-size:13px;
+}
+
+#sisterDayView .task-pool{
+  position:sticky;
+  top:82px;
+  border:1px solid #e6ebf2;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 8px 30px rgba(15,23,42,.035);
+}
+
+#sisterDayView .task-pool-head{
+  padding:16px;
+  border-bottom:1px solid #eef2f7;
+  background:#fbfcff;
+  font-size:16px;
+  font-weight:800;
+}
+
+#sisterDayView .task-pool-body{
+  padding:14px;
+}
+
+#sisterDayView .pool-section-title{
+  margin:8px 0 6px;
+  font-size:12px;
+  color:#64748b;
+}
+
+#sisterDayView .pool-task{
+  border:1px solid #eef2f7;
+  border-radius:13px;
+  padding:11px;
+  background:#fff;
+}
+
+#sisterDayView .pool-task-name{
+  font-size:13px;
+  font-weight:750;
+  color:#0f172a;
+}
+
+#sisterDayView .pool-task-meta{
+  font-size:12px;
+  color:#64748b;
+}
+
+@media (max-width:1000px){
+  .sister-day-view:not(.hidden){
+    grid-template-columns:1fr;
+  }
+
+  #sisterDayView .task-pool{
+    position:static;
+    order:-1;
+  }
+
+  #sisterDayView .sister-board{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:640px){
+  .day-columns{
+    grid-template-columns:1fr;
+  }
+
+  .day-sister-head{
+    align-items:flex-start;
+  }
+
+  .day-sister-load{
+    min-width:76px;
+  }
+}
+
 </style>
 </head>
 
@@ -464,12 +1412,12 @@
   <section class="page active" id="page-by-sister">
     <div class="card">
       <div class="card-head">
-        <h2>Planning par sœur</h2>
+        <h2>Vue par sœur — Semaine complète</h2>
         <div class="spacer"></div>
         <div class="controls">
           <div class="view-toggle" id="sisterViewToggle">
             <button class="segbtn active" type="button" data-sister-mode="week">Vue semaine</button>
-            <button class="segbtn" type="button" data-sister-mode="day">Édition jour</button>
+            <button class="segbtn" type="button" data-sister-mode="day">Vue jour</button>
           </div>
           <input class="input" type="date" id="sisterWeekSelect" />
           <input class="input" type="date" id="sisterDaySelect" />
@@ -493,6 +1441,16 @@
         <div class="sister-week-view active" id="sisterWeekView">
           <div class="week-table-wrap">
             <table class="week-sister-table" id="sisterWeekTable"></table>
+          </div>
+          <div class="sister-balance-footer">
+            <div>
+              <div class="sister-balance-title">⚖️ Équilibre global : <strong>Bon</strong></div>
+              <div class="sister-balance-sub">La répartition des tâches semble équilibrée.</div>
+            </div>
+            <div class="sister-balance-actions">
+              <button class="btn btn-outline-purple" type="button" onclick="document.getElementById('btnPdfWeek').click()">📄 Exporter en PDF</button>
+              <button class="btn btn-purple" type="button" onclick="document.getElementById('btnSaveWeekSister').click()">💾 Sauvegarder le planning</button>
+            </div>
           </div>
         </div>
         <div class="sister-day-view hidden" id="sisterDayView">
@@ -1637,6 +2595,12 @@
     $("#sisterDayView").classList.toggle("hidden", sisterViewMode !== "day");
     $("#sisterWeekView").classList.toggle("active", sisterViewMode === "week");
     $$("#sisterViewToggle .segbtn").forEach(btn=>btn.classList.toggle("active", btn.dataset.sisterMode === sisterViewMode));
+    const bySisterTitle = $("#page-by-sister h2");
+    if(bySisterTitle){
+      bySisterTitle.textContent = sisterViewMode === "day"
+        ? "Vue par sœur — Journée"
+        : "Vue par sœur — Semaine complète";
+    }
 
     const selectedDate = selectedSisterDate();
     const selectedDay = dayKeyFromDateISO(selectedDate);
@@ -1681,17 +2645,36 @@
     board.innerHTML = "";
     for(const sister of activeSisters){
       const rows = dayRowsBySister[sister.id] || [];
+      const minutes = loads[sister.id] || 0;
+      const loadHours = Math.round(minutes / 60 * 10) / 10;
+      const pct = Math.min(100, Math.round((minutes / (8 * 60)) * 100));
+      const status = sisterCardStatus(rows, sister, selectedDate, selectedDay, minutes);
+      const loadLabel = status === "absent" ? "Absente" : pct >= 90 ? "Très chargée" : pct >= 70 ? "Chargée" : rows.length ? "Équilibrée" : "Disponible";
+      const loadClass = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
       const card = document.createElement("div");
-      card.className = "sister-card " + sisterCardStatus(rows, sister, selectedDate, selectedDay, loads[sister.id] || 0);
+      card.className = "day-sister-card " + status;
       card.innerHTML = `
-        <div class="sister-card-head">
-          <div class="sister-card-name">${esc(sister.name)}</div>
-          <div class="load-pill">${Math.round((loads[sister.id] || 0) / 60 * 10) / 10} h</div>
+        <div class="day-sister-head">
+          <div class="day-sister-identity">
+            <div class="avatar">${esc(sisterInitials(sister.name))}</div>
+            <div>
+              <div class="day-sister-name">${esc(sister.name)}</div>
+              <div class="day-sister-sub">${esc(selectedDateFR)}</div>
+            </div>
+          </div>
+          <div class="day-sister-load">
+            <div class="day-load-value">${loadHours} h</div>
+            <div class="loadbar"><div class="loadbar-fill ${loadClass}" style="width:${pct}%"></div></div>
+            <div class="day-load-label ${loadClass}">${esc(loadLabel)}</div>
+          </div>
         </div>
-        <div class="sister-card-body">
+        <div class="day-sister-body">
           ${sisterAvailabilityBlock(sister, selectedDate, selectedDay)}
           ${sisterDayRows(sister, rows, selectedDay)}
-          ${sisterAddControls(sister, selectedDay)}
+          <div class="day-add-panel">
+            <div class="day-add-title">Ajouter une tâche</div>
+            ${sisterAddControls(sister, selectedDay)}
+          </div>
         </div>
       `;
       board.appendChild(card);
@@ -1847,14 +2830,21 @@
   }
 
   function sisterWeekStatusLabel(status){
-    if(status === "overloaded") return "Très chargée";
-    if(status === "free") return "Libre cette semaine";
-    return "Travaille cette semaine";
+    if(status === "overloaded") return "Chargée";
+    if(status === "absent") return "Absente";
+    return "Disponible";
   }
 
   function sisterInitials(name){
     const parts = String(name || "").replace(/^sœur\s+/i, "").split(/[\s-]+/).filter(Boolean);
     return parts.slice(0,2).map(p=>p[0]).join("").toUpperCase() || "?";
+  }
+
+  function formatLoadMinutes(minutes){
+    minutes = Math.max(0, Math.round(Number(minutes || 0)));
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}h${String(m).padStart(2,"0")}`;
   }
 
   function sisterCardStatus(rows, sister, dateISO, day, minutes){
@@ -1899,7 +2889,7 @@
           </div>`;
         }).join("")}</td>`;
       }).join("");
-      const load = Math.round((loads[sister.id] || 0) / 60 * 10) / 10;
+      const load = formatLoadMinutes(loads[sister.id] || 0);
       const pct = Math.min(100, Math.round(((loads[sister.id] || 0) / (8 * 60)) * 100));
       const fillClass = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
       return `<tr>
@@ -1913,7 +2903,7 @@
           </div>
         </td>
         <td>
-          <div style="font-weight:900">${load} h</div>
+          <div style="font-weight:750;font-size:15px;color:#0f172a">${load}</div>
           <div class="loadbar"><div class="loadbar-fill ${fillClass}" style="width:${pct}%"></div></div>
           <div class="sister-task-meta">${pct}%</div>
         </td>
@@ -1928,42 +2918,58 @@
     const amAbsent = isAbsent(sister.id, dateISO, "AM");
     const pmAbsent = isAbsent(sister.id, dateISO, "PM");
     const repetition = sisterRepetitionDays(sister.id).includes(day);
-    const amClass = amAbsent ? " absent" : "";
-    const pmClass = pmAbsent ? " absent" : repetition ? " busy" : "";
-    const pmText = pmAbsent ? "PM absent" : repetition ? "PM répétition" : "PM disponible";
-    return `<div class="availability">
-      <div class="availability-pill${amClass}">${amAbsent ? "AM absent" : "AM disponible"}</div>
-      <div class="availability-pill${pmClass}">${pmText}</div>
+    const amClass = amAbsent ? " absent" : " available";
+    const pmClass = pmAbsent ? " absent" : repetition ? " busy" : " available";
+    const pmText = pmAbsent ? "PM absente" : repetition ? "PM répétition" : "PM disponible";
+    return `<div class="day-availability">
+      <div class="day-availability-pill${amClass}">${amAbsent ? "AM absente" : "AM disponible"}</div>
+      <div class="day-availability-pill${pmClass}">${pmText}</div>
     </div>`;
   }
 
   function sisterDayRows(sister, rows, day){
-    if(!rows.length){
-      return `<div class="sister-day"><div class="sister-day-title">${esc(dayNamesFR[day])}</div><div class="hint">Aucune tâche ce jour.</div></div>`;
-    }
     const byMoment = { AM: [], PM: [] };
     for(const row of rows){
       if(row.moment === "AM") byMoment.AM.push(row);
       else byMoment.PM.push(row);
     }
-    return ["AM","PM"].map(moment=>{
-      const rowsForMoment = byMoment[moment].sort((a,b)=>
+
+    return `<div class="day-columns">
+      ${dayMomentBlock(sister, byMoment.AM, day, "AM")}
+      ${dayMomentBlock(sister, byMoment.PM, day, "PM")}
+    </div>`;
+  }
+
+  function dayMomentBlock(sister, rowsForMoment, day, moment){
+    const dateISO = dateForDay(day);
+    const absent = isAbsent(sister.id, dateISO, moment);
+    const dotClass = moment === "AM" ? "am" : "pm";
+    const title = moment === "AM" ? "Matin" : "Après-midi";
+
+    let content = "";
+    if(absent){
+      content = `<div class="day-task-card absent">Absente</div>`;
+    }else if(!rowsForMoment.length){
+      content = `<div class="day-task-card empty">Libre</div>`;
+    }else{
+      content = rowsForMoment.sort((a,b)=>
         timeLabelToMinutes(a.task.time_label, a.task.moment) - timeLabelToMinutes(b.task.time_label, b.task.moment)
-      );
-      const lines = rowsForMoment.length ? rowsForMoment.map(row=>{
+      ).map(row=>{
         const rot = rotationLabelForTask(row.task, weekISO(), row.day);
         const name = rot ? `${row.task.name} (${rot})` : row.task.name;
-        const remove = isLocked ? "" : `<button class="iconbtn js-sister-remove" title="Retirer" data-sisterid="${sister.id}" data-slot="${row.slotKey}" data-taskid="${row.task.id}">×</button>`;
-        return `<div class="sister-task-row">
-          <div>
-            <div class="sister-task-main">${esc(name)}</div>
-            <div class="sister-task-meta">${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))} · ${Number(row.task.duration_minutes || 0)} min</div>
-          </div>
+        const remove = isLocked ? "" : `<button class="day-remove js-sister-remove" title="Retirer" data-sisterid="${sister.id}" data-slot="${row.slotKey}" data-taskid="${row.task.id}">×</button>`;
+        return `<div class="day-task-card ${dotClass}">
           ${remove}
+          <div>${esc(name)}</div>
+          <div class="day-task-meta">${esc(normalizeTimeLabel(row.task.time_label, row.task.moment))} · ${Number(row.task.duration_minutes || 0)} min</div>
         </div>`;
-      }).join("") : `<div class="hint">Aucune tâche</div>`;
-      return `<div class="sister-day"><div class="sister-day-title">${moment === "AM" ? "Matin" : "Après-midi"}</div>${lines}</div>`;
-    }).join("");
+      }).join("");
+    }
+
+    return `<section class="day-slot">
+      <div class="day-slot-title"><span><span class="day-slot-dot ${dotClass}"></span>${title}</span><span>${moment}</span></div>
+      ${content}
+    </section>`;
   }
 
   function sisterWeekRows(sister, rows){
