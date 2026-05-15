@@ -824,6 +824,26 @@ main{
   background:#22c55e;
 }
 
+.loadbar-fill.load-very-light{
+  background:#94a3b8;
+}
+
+.loadbar-fill.load-balanced{
+  background:#22c55e;
+}
+
+.loadbar-fill.load-heavy{
+  background:#f59e0b;
+}
+
+.loadbar-fill.load-very-heavy{
+  background:#ef4444;
+}
+
+.loadbar-fill.load-overloaded{
+  background:#7f1d1d;
+}
+
 .loadbar-fill.warn{
   background:#f59e0b;
 }
@@ -1121,6 +1141,31 @@ main{
   font-size:12px;
   font-weight:650;
   color:#16a34a;
+}
+
+.day-load-label.load-very-light,
+.status-pill.load-very-light{
+  color:#64748b;
+}
+
+.day-load-label.load-balanced,
+.status-pill.load-balanced{
+  color:#16a34a;
+}
+
+.day-load-label.load-heavy,
+.status-pill.load-heavy{
+  color:#f59e0b;
+}
+
+.day-load-label.load-very-heavy,
+.status-pill.load-very-heavy{
+  color:#dc2626;
+}
+
+.day-load-label.load-overloaded,
+.status-pill.load-overloaded{
+  color:#7f1d1d;
 }
 
 .day-load-label.warn{
@@ -2647,10 +2692,11 @@ main{
       const rows = dayRowsBySister[sister.id] || [];
       const minutes = loads[sister.id] || 0;
       const loadHours = Math.round(minutes / 60 * 10) / 10;
-      const pct = Math.min(100, Math.round((minutes / (8 * 60)) * 100));
+      const loadStatus = getLoadStatus(loadHours);
+      const pct = loadStatus.percent;
       const status = sisterCardStatus(rows, sister, selectedDate, selectedDay, minutes);
-      const loadLabel = status === "absent" ? "Absente" : pct >= 90 ? "Très chargée" : pct >= 70 ? "Chargée" : rows.length ? "Équilibrée" : "Disponible";
-      const loadClass = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
+      const loadLabel = status === "absent" ? "Absente" : loadStatus.label;
+      const loadClass = status === "absent" ? "bad" : loadStatus.className;
       const card = document.createElement("div");
       card.className = "day-sister-card " + status;
       card.innerHTML = `
@@ -2762,6 +2808,25 @@ main{
     pool.innerHTML = html;
   }
 
+  function getLoadStatus(hours){
+    const safeHours = Math.max(0, Number(hours || 0));
+    let status;
+    if(safeHours <= 5){
+      status = { label:"TrÃ¨s lÃ©gÃ¨re", className:"load-very-light", sort:0 };
+    }else if(safeHours <= 15){
+      status = { label:"Ã‰quilibrÃ©e", className:"load-balanced", sort:1 };
+    }else if(safeHours <= 30){
+      status = { label:"ChargÃ©e", className:"load-heavy", sort:2 };
+    }else if(safeHours <= 45){
+      status = { label:"TrÃ¨s chargÃ©e", className:"load-very-heavy", sort:3 };
+    }else{
+      status = { label:"SurchargÃ©e", className:"load-overloaded", sort:4 };
+    }
+    status.percent = Math.min(100, Math.round((safeHours / 45) * 100));
+    status.filterStatus = status.sort >= 3 ? "overloaded" : safeHours > 0 ? "busy" : "free";
+    return status;
+  }
+
   function renderSisterWeekCards(rowsBySister, loads){
     const board = $("#sisterWeekCards");
     if(!board) return;
@@ -2769,12 +2834,13 @@ main{
     const activeSisters = sisters.filter(s=>Number(s.active));
     board.innerHTML = activeSisters.map(sister=>{
       const rows = rowsBySister[sister.id] || [];
+      const loadStatus = getLoadStatus((loads[sister.id] || 0) / 60);
       const status = sisterWeekStatus(rows, loads[sister.id] || 0);
       return `<section class="sister-card ${status}">
         <div class="sister-card-head">
           <div>
             <div class="sister-card-name">${esc(sister.name)}</div>
-            <div class="sister-task-meta">${esc(sisterWeekStatusLabel(status))}</div>
+            <div class="sister-task-meta">${esc(loadStatus.label)}</div>
           </div>
           <div class="load-pill">${Math.round((loads[sister.id] || 0) / 60 * 10) / 10} h semaine</div>
         </div>
@@ -2824,13 +2890,14 @@ main{
   }
 
   function sisterWeekStatus(rows, minutes){
-    if(minutes >= 8 * 60) return "overloaded";
+    const loadStatus = getLoadStatus(minutes / 60);
+    if(loadStatus.filterStatus === "overloaded") return "overloaded";
     if(!rows.length) return "free";
     return "busy";
   }
 
-  function sisterWeekStatusLabel(status){
-    if(status === "overloaded") return "Chargée";
+  function sisterWeekStatusLabel(status, minutes){
+    if(status === "overloaded") return getLoadStatus(minutes / 60).label;
     if(status === "absent") return "Absente";
     return "Disponible";
   }
@@ -2849,7 +2916,7 @@ main{
 
   function sisterCardStatus(rows, sister, dateISO, day, minutes){
     if(isAbsent(sister.id, dateISO, "AM") && isAbsent(sister.id, dateISO, "PM")) return "absent";
-    if(minutes >= 8 * 60) return "overloaded";
+    if(getLoadStatus(minutes / 60).filterStatus === "overloaded") return "overloaded";
     if(!rows.length) return "free";
     return "busy";
   }
@@ -2869,7 +2936,10 @@ main{
     const statusFilter = $("#sisterStatusFilter")?.value || "all";
     const body = activeSisters.map(sister=>{
       const rows = rowsBySister[sister.id] || [];
-      const status = sisterWeekStatus(rows, loads[sister.id] || 0);
+      const minutes = loads[sister.id] || 0;
+      const loadHours = Math.round(minutes / 60 * 10) / 10;
+      const loadStatus = getLoadStatus(loadHours);
+      const status = sisterWeekStatus(rows, minutes);
       if(search && !String(sister.name || "").toLowerCase().includes(search)) return "";
       if(statusFilter !== "all" && status !== statusFilter) return "";
       const cells = dayOrder.map(day=>{
@@ -2889,16 +2959,16 @@ main{
           </div>`;
         }).join("")}</td>`;
       }).join("");
-      const load = formatLoadMinutes(loads[sister.id] || 0);
-      const pct = Math.min(100, Math.round(((loads[sister.id] || 0) / (8 * 60)) * 100));
-      const fillClass = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
+      const load = formatLoadMinutes(minutes);
+      const pct = loadStatus.percent;
+      const fillClass = loadStatus.className;
       return `<tr>
         <td>
           <div class="sister-cell">
-            <div class="avatar">${esc(sisterInitials(sister.name))}</div>
+              <div class="avatar">${esc(sisterInitials(sister.name))}</div>
             <div>
               <div class="week-sister-name">${esc(sister.name)}</div>
-              <span class="status-pill ${status}">${esc(sisterWeekStatusLabel(status))}</span>
+              <span class="status-pill ${status} ${loadStatus.className}">${esc(loadStatus.label)}</span>
             </div>
           </div>
         </td>
