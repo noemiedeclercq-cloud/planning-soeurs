@@ -1693,7 +1693,16 @@ main{
         <div class="field"><label>Durée (minutes)</label><input class="input" id="taskDuration" type="number" min="1" value="60" /></div>
         <div class="field"><label>Nombre de personnes</label><input class="input" id="taskPeople" type="number" min="1" value="1" /></div>
         <div class="field"><label>Type</label><select class="select" id="taskType"><option>Fixe</option><option>Périodique</option><option>Flexible</option></select></div>
-        <div class="field"><label>Priorité (1=obligatoire)</label><select class="select" id="taskPrio"><option>1</option><option selected>2</option><option>3</option></select></div>
+        <div class="field">
+          <label>Priorité</label>
+          <select class="select" id="taskPrio">
+            <option value="1">1 — Obligatoire absolu</option>
+            <option value="2" selected>2 — Important</option>
+            <option value="3">3 — Normal</option>
+            <option value="4">4 — Optionnel</option>
+          </select>
+          <div class="hint">Priorité utilisée par le moteur : 1 = toujours placer, 2 = placer en priorité, 3 = placer normalement, 4 = placer seulement si possible</div>
+        </div>
         <div class="field"><label>Actif</label><input type="checkbox" id="taskActive" checked /></div>
       </div>
       <div class="field" style="margin-top:12px;">
@@ -2436,6 +2445,27 @@ main{
       return { start:14*60 + 30, end:15*60 + 30, taskId:"repetition" };
     }
 
+    function taskPriority(task){
+      return Math.min(4, Math.max(1, Number(task.prio || 2)));
+    }
+
+    function isFlexiblePlanningTask(task){
+      return taskPriority(task) === 4 || String(task.type || "").toLowerCase() === "flexible";
+    }
+
+    function processingRank(task){
+      const prio = taskPriority(task);
+      if(prio === 4) return 6;
+      return isFlexiblePlanningTask(task) ? 3 + (prio - 1) : prio - 1;
+    }
+
+    function canUseCandidateForTask(sisterId, slotKey, task){
+      if(!canTakeTask(sisterId, slotKey, task)) return false;
+      if(!isFlexiblePlanningTask(task)) return true;
+      const loadAfter = totalLoadMinutes[sisterId] + Number(task.duration_minutes || 60);
+      return loadAfter <= 45 * 60;
+    }
+
     function fixedForSlot(dayKey, moment, dateISO){
       return fixedAssignments.filter(fa=>{
         if(fa.moment !== moment) return false;
@@ -2507,7 +2537,7 @@ main{
       for(const s of candidates){
         const sid = s.id;
         if(alreadyAssigned.includes(sid)) continue;
-        if(!canTakeTask(sid, slotKey, task)) continue;
+        if(!canUseCandidateForTask(sid, slotKey, task)) continue;
 
         let score = Math.random() * 0.01;
         score += totalLoadMinutes[sid] * 1.0;
@@ -2515,6 +2545,7 @@ main{
         score += momentLoadMinutes[sid][slotKey] * 2.4;
         score += (taskHistoryBySister[sid][task.id] || 0) * 180;
         if(moment === "PM" && sisterRepetitionDays(sid).includes(dayKey)) score += 240;
+        if(isFlexiblePlanningTask(task)) score += 400;
 
         const loadAfter = totalLoadMinutes[sid] + Number(task.duration_minutes || 60);
         if(loadAfter > 45*60) score += 2000;
@@ -2543,18 +2574,19 @@ main{
           .filter(t=> (t.moment==="AM+PM") ? true : (t.moment===moment))
           .filter(t=> parseCSV(t.days).includes(dayKey))
           .sort((a,b)=>{
+            const rankA = processingRank(a);
+            const rankB = processingRank(b);
+            if(rankA !== rankB) return rankA - rankB;
+
             const possibleA = baseCandidates.filter(s=>isEligible(s.id, a.id)).length;
             const possibleB = baseCandidates.filter(s=>isEligible(s.id, b.id)).length;
             if(possibleA !== possibleB) return possibleA - possibleB;
 
-            const typeWeight = x => x.type==="Fixe" ? 0 : x.type==="Périodique" ? 1 : 2;
-            if(typeWeight(a)!==typeWeight(b)) return typeWeight(a)-typeWeight(b);
-
-            const wa = taskTimeWindow(a);
-            const wb = taskTimeWindow(b);
+            const wa = taskTimeWindow({...a, moment});
+            const wb = taskTimeWindow({...b, moment});
             if(wa.start !== wb.start) return wa.start - wb.start;
 
-            return Number(a.prio)-Number(b.prio);
+            return String(a.name || "").localeCompare(String(b.name || ""), "fr");
           });
 
         planning[slotKey] = slotTasks.map(t=>({taskId:t.id, assigned:[]}));
@@ -2588,7 +2620,7 @@ main{
             if(item.assigned.length >= needed) break;
             if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
-            if(!canTakeTask(sid, slotKey, t)) continue;
+            if(!canUseCandidateForTask(sid, slotKey, t)) continue;
             if(assignTaskToSister(sid, slotKey, t)) item.assigned.push(sid);
           }
 
@@ -2597,7 +2629,7 @@ main{
             if(item.assigned.length >= needed) break;
             if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
-            if(!canTakeTask(sid, slotKey, t)) continue;
+            if(!canUseCandidateForTask(sid, slotKey, t)) continue;
             if(assignTaskToSister(sid, slotKey, t)) item.assigned.push(sid);
           }
 
