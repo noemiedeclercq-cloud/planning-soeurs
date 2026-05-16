@@ -2407,7 +2407,31 @@ main{
     const totalLoadMinutes = {};
     sisters.forEach(s=> totalLoadMinutes[s.id] = 0);
 
-    const lastAssignedByTask = {};
+    const dayLoadMinutes = {};
+    const momentLoadMinutes = {};
+    const taskHistoryBySister = {};
+    sisters.forEach(s=>{
+      dayLoadMinutes[s.id] = {};
+      momentLoadMinutes[s.id] = {};
+      taskHistoryBySister[s.id] = {};
+      dayOrder.forEach(d=>{
+        dayLoadMinutes[s.id][d] = 0;
+        momentLoadMinutes[s.id][`${d}-AM`] = 0;
+        momentLoadMinutes[s.id][`${d}-PM`] = 0;
+      });
+    });
+
+    function slotBounds(moment){
+      return moment === "PM"
+        ? { start:14*60 + 30, end:16*60 + 50 }
+        : { start:9*60 + 30, end:11*60 + 50 };
+    }
+
+    function repetitionWindowFor(sisterId, dayKey, moment){
+      if(moment !== "PM") return null;
+      if(!sisterRepetitionDays(sisterId).includes(dayKey)) return null;
+      return { start:14*60 + 30, end:15*60 + 30, taskId:"repetition" };
+    }
 
     function fixedForSlot(dayKey, moment, dateISO){
       return fixedAssignments.filter(fa=>{
@@ -2419,42 +2443,80 @@ main{
       });
     }
 
-    function canTakeTask(sisterId, slotKey, task){
+    function findTaskWindowForSister(sisterId, slotKey, task){
       const [dayKey, moment] = slotKey.split("-");
-      if(isInRepetition(sisterId, dayKey, moment, task)) return false;
-      const taskWindow = taskTimeWindow(task);
-      const arr = sisterSchedules[sisterId][slotKey] || [];
-      return !arr.some(existing => overlaps(taskWindow, existing));
+      const taskWindow = taskTimeWindow({...task, moment});
+      const busy = (sisterSchedules[sisterId][slotKey] || []).slice();
+      const repetition = repetitionWindowFor(sisterId, dayKey, moment);
+      if(repetition) busy.push(repetition);
+
+      if(!taskWindow.isFlexible){
+        return busy.some(existing => overlaps(taskWindow, existing)) ? null : taskWindow;
+      }
+
+      const bounds = slotBounds(moment);
+      const duration = Math.max(1, Number(task.duration_minutes || 60));
+      const intervals = busy
+        .filter(x=>overlaps(x, bounds))
+        .map(x=>({ start:Math.max(bounds.start, x.start), end:Math.min(bounds.end, x.end) }))
+        .sort((a,b)=>a.start-b.start);
+
+      let cursor = bounds.start;
+      for(const interval of intervals){
+        if(cursor + duration <= interval.start){
+          return { start:cursor, end:cursor + duration, isFlexible:true };
+        }
+        cursor = Math.max(cursor, interval.end);
+      }
+      if(cursor + duration <= bounds.end){
+        return { start:cursor, end:cursor + duration, isFlexible:true };
+      }
+      return null;
+    }
+
+    function canTakeTask(sisterId, slotKey, task){
+      return !!findTaskWindowForSister(sisterId, slotKey, task);
     }
 
     function assignTaskToSister(sisterId, slotKey, task){
-      const taskWindow = taskTimeWindow(task);
+      const [dayKey] = slotKey.split("-");
+      const taskWindow = findTaskWindowForSister(sisterId, slotKey, task);
+      if(!taskWindow) return false;
       if(!sisterSchedules[sisterId][slotKey]) sisterSchedules[sisterId][slotKey] = [];
       sisterSchedules[sisterId][slotKey].push({
         start: taskWindow.start,
         end: taskWindow.end,
         taskId: task.id
       });
-      totalLoadMinutes[sisterId] += Number(task.duration_minutes || 60);
+      const duration = Number(task.duration_minutes || 60);
+      totalLoadMinutes[sisterId] += duration;
+      dayLoadMinutes[sisterId][dayKey] += duration;
+      momentLoadMinutes[sisterId][slotKey] += duration;
+      taskHistoryBySister[sisterId][task.id] = (taskHistoryBySister[sisterId][task.id] || 0) + 1;
+      return true;
     }
 
-    function pickCandidate(candidates, slotKey, task, prevForThisTask){
+    function pickCandidate(candidates, slotKey, task, alreadyAssigned){
+      const [dayKey, moment] = slotKey.split("-");
       let best = null;
       let bestScore = 1e9;
 
       for(const s of candidates){
         const sid = s.id;
+        if(alreadyAssigned.includes(sid)) continue;
         if(!canTakeTask(sid, slotKey, task)) continue;
 
-        let score = 0;
+        let score = Math.random() * 0.01;
         score += totalLoadMinutes[sid] * 1.0;
-        if(prevForThisTask && prevForThisTask.includes(sid)) score += 30;
+        score += dayLoadMinutes[sid][dayKey] * 1.8;
+        score += momentLoadMinutes[sid][slotKey] * 2.4;
+        score += (taskHistoryBySister[sid][task.id] || 0) * 180;
+        if(moment === "PM" && sisterRepetitionDays(sid).includes(dayKey)) score += 240;
 
-        // petite pénalité pour les tâches flexibles si la sœur est déjà bien chargée
-        const window = taskTimeWindow(task);
-        if(window.isFlexible) score += 10;
-
-        score += Math.random() * 0.2;
+        const loadAfter = totalLoadMinutes[sid] + Number(task.duration_minutes || 60);
+        if(loadAfter > 45*60) score += 2000;
+        else if(loadAfter > 30*60) score += 900;
+        else if(loadAfter > 15*60) score += 250;
 
         if(score < bestScore){
           bestScore = score;
@@ -2469,11 +2531,19 @@ main{
         const slotKey = `${dayKey}-${moment}`;
         const dateISO = dates[dayKey];
 
+        const baseCandidates = sisters
+          .filter(s=>Number(s.active))
+          .filter(s=>!isAbsent(s.id, dateISO, moment));
+
         const slotTasks = tasks
           .filter(t=>Number(t.active))
           .filter(t=> (t.moment==="AM+PM") ? true : (t.moment===moment))
           .filter(t=> parseCSV(t.days).includes(dayKey))
           .sort((a,b)=>{
+            const possibleA = baseCandidates.filter(s=>isEligible(s.id, a.id)).length;
+            const possibleB = baseCandidates.filter(s=>isEligible(s.id, b.id)).length;
+            if(possibleA !== possibleB) return possibleA - possibleB;
+
             const typeWeight = x => x.type==="Fixe" ? 0 : x.type==="Périodique" ? 1 : 2;
             if(typeWeight(a)!==typeWeight(b)) return typeWeight(a)-typeWeight(b);
 
@@ -2485,10 +2555,6 @@ main{
           });
 
         planning[slotKey] = slotTasks.map(t=>({taskId:t.id, assigned:[]}));
-
-        const baseCandidates = sisters
-          .filter(s=>Number(s.active))
-          .filter(s=>!isAbsent(s.id, dateISO, moment));
 
         const fixed = fixedForSlot(dayKey, moment, dateISO);
         const forcedMap = {};
@@ -2512,7 +2578,6 @@ main{
           if(!t) continue;
 
           const needed = Math.max(1, Number(t.people||1));
-          const prevForThisTask = lastAssignedByTask[t.id] || null;
           const candidates = baseCandidates.filter(s=>isEligible(s.id, t.id));
 
           const forced = (forcedMap[t.id] || []).filter(Boolean);
@@ -2521,8 +2586,7 @@ main{
             if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
             if(!canTakeTask(sid, slotKey, t)) continue;
-            item.assigned.push(sid);
-            assignTaskToSister(sid, slotKey, t);
+            if(assignTaskToSister(sid, slotKey, t)) item.assigned.push(sid);
           }
 
           const pref = (prefMap[t.id] || []).filter(Boolean);
@@ -2531,19 +2595,15 @@ main{
             if(item.assigned.includes(sid)) continue;
             if(!candidates.some(c=>c.id===sid)) continue;
             if(!canTakeTask(sid, slotKey, t)) continue;
-            item.assigned.push(sid);
-            assignTaskToSister(sid, slotKey, t);
+            if(assignTaskToSister(sid, slotKey, t)) item.assigned.push(sid);
           }
 
           while(item.assigned.length < needed){
-            const sid = pickCandidate(candidates, slotKey, t, prevForThisTask);
+            const sid = pickCandidate(candidates, slotKey, t, item.assigned);
             if(!sid) break;
-            if(item.assigned.includes(sid)) break;
-            item.assigned.push(sid);
-            assignTaskToSister(sid, slotKey, t);
+            if(assignTaskToSister(sid, slotKey, t)) item.assigned.push(sid);
+            else break;
           }
-
-          lastAssignedByTask[t.id] = item.assigned.slice();
         }
       }
     }
