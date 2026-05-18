@@ -2100,12 +2100,30 @@ main{
     return arr.find(x => Number(x.taskId) === Number(taskId)) || null;
   }
 
+  function issueExplanation(issue, slotKey, task){
+    if(!issue) return "";
+    if(issue.reason) return issue.reason;
+    if(issue.details) return Array.isArray(issue.details) ? issue.details.join(" ") : String(issue.details);
+    const missing = Math.max(0, Number(issue.expected || 0) - Number(issue.assigned || 0));
+    if(issue.status === "impossible"){
+      if(Number(issue.max_possible || 0) === 0){
+        return "Impossible : aucune sœur disponible avec la compétence requise, ou toutes les sœurs possibles sont absentes, en répétition ou déjà occupées.";
+      }
+      return `Impossible : il faut ${issue.expected} personne(s), mais seulement ${issue.max_possible} sœur(s) peuvent être placées sur ce créneau.`;
+    }
+    if(issue.status === "conflict") return "Conflit : une sœur assignée est absente, non compétente, en répétition ou déjà affectée à une autre tâche au même horaire.";
+    if(issue.status === "empty") return "Non pourvue : aucune sœur n’a été assignée.";
+    if(issue.status === "partial") return `Incomplète : il manque ${missing || 1} personne(s).`;
+    return "Problème à vérifier dans cette tâche.";
+  }
+
   function issueBadge(issue){
     if(!issue) return "";
-    if(issue.status === "impossible") return `<span class="badge-warn purple">🟣 impossible</span>`;
-    if(issue.status === "conflict") return `<span class="badge-warn darkred">⛔ conflit</span>`;
-    if(issue.status === "empty") return `<span class="badge-warn red">⚠️ non pourvue</span>`;
-    if(issue.status === "partial") return `<span class="badge-warn orange">🟠 ${issue.assigned}/${issue.expected}</span>`;
+    const title = esc(issueExplanation(issue));
+    if(issue.status === "impossible") return `<span class="badge-warn purple" title="${title}">🟣 impossible</span>`;
+    if(issue.status === "conflict") return `<span class="badge-warn darkred" title="${title}">⛔ conflit</span>`;
+    if(issue.status === "empty") return `<span class="badge-warn red" title="${title}">⚠️ non pourvue</span>`;
+    if(issue.status === "partial") return `<span class="badge-warn orange" title="${title}">🟠 ${issue.assigned}/${issue.expected}</span>`;
     return "";
   }
 
@@ -2669,11 +2687,13 @@ main{
           const issue = issueFor(slotKey, t.id);
           const cls = issueClass(issue);
           const badge = issueBadge(issue);
+          const issueTitle = issueExplanation(issue, slotKey, t);
 
           const card = document.createElement("div");
           card.className = "task " + cls;
           card.dataset.slot = slotKey;
           card.dataset.task = String(t.id);
+          if(issueTitle) card.title = issueTitle;
 
           card.innerHTML = `
             <div class="task-top">
@@ -2696,6 +2716,12 @@ main{
                 : `<span class="chip" style="opacity:.75">—</span>`
             }</div>
           `;
+          if(issue){
+            card.addEventListener("click", (e)=>{
+              if(e.target.closest(".js-edit")) return;
+              openEditModal(day, moment, Number(t.id));
+            });
+          }
           el.appendChild(card);
         });
       }
@@ -2717,6 +2743,17 @@ main{
 
   function slotItemsFor(day, moment){
     return planning[`${day}-${moment}`] || [];
+  }
+
+  function hasScheduleConflictForSister(sisterId, day, moment, task, currentTaskId){
+    const currentWindow = taskTimeWindow({...task, moment});
+    return slotItemsFor(day, moment).some(item=>{
+      if(Number(item.taskId) === Number(currentTaskId)) return false;
+      if(!(item.assigned || []).some(id=>Number(id) === Number(sisterId))) return false;
+      const otherTask = tasks.find(t=>Number(t.id) === Number(item.taskId));
+      if(!otherTask) return false;
+      return overlaps(currentWindow, taskTimeWindow({...otherTask, moment}));
+    });
   }
 
   function assignedCountFor(day, moment, taskId){
@@ -2865,12 +2902,6 @@ main{
       });
     });
 
-    $$(".js-add-task").forEach(sel=>{
-      sel.addEventListener("change", ()=>{
-        const wrap = sel.closest(".sister-add");
-        hydrateSisterAddTaskSelect(wrap);
-      });
-    });
   }
 
   function renderTaskPool(day, dateISO){
@@ -3175,11 +3206,18 @@ main{
   function hydrateSisterAddTaskSelect(wrap){
     const day = wrap.dataset.day;
     const select = wrap.querySelector(".js-add-task");
+    const currentValue = select.value;
     const options = tasks
       .filter(t=>taskFitsSlot(t, day, "AM") || taskFitsSlot(t, day, "PM"))
       .sort((a,b)=>Number(a.prio || 2) - Number(b.prio || 2) || a.name.localeCompare(b.name, "fr"))
       .map(t=>`<option value="${t.id}">${esc(t.name)} · ${esc(t.moment)}</option>`);
-    select.innerHTML = options.length ? options.join("") : `<option value="">Aucune tâche</option>`;
+    select.innerHTML = `<option value="">Choisir une tâche</option>` + options.join("");
+    if(currentValue && options.some(option=>option.includes(`value="${currentValue}"`))){
+      select.value = currentValue;
+    }
+    if(!options.length){
+      select.innerHTML = `<option value="">Aucune tâche disponible</option>`;
+    }
   }
 
   function buildDailyPrintPages(){
@@ -3368,11 +3406,17 @@ main{
 
     const candidates = sisters
       .filter(s=>Number(s.active))
-      .filter(s=>isEligible(s.id, t.id))
       .map(s=>{
         const absent = isAbsent(s.id, dateISO, moment);
         const repetition = isInRepetition(s.id, day, moment, t);
-        return { id:s.id, name:s.name, absent, repetition };
+        const eligible = isEligible(s.id, t.id);
+        const conflict = hasScheduleConflictForSister(s.id, day, moment, t, taskId);
+        const reasons = [];
+        if(absent) reasons.push("absente");
+        if(repetition) reasons.push("répétition");
+        if(!eligible) reasons.push("pas compétente");
+        if(conflict) reasons.push("conflit horaire");
+        return { id:s.id, name:s.name, absent, repetition, eligible, conflict, reasons };
       });
 
     const wrap = $("#editSelects");
@@ -3386,8 +3430,8 @@ main{
 
       const options = [`<option value="">—</option>`].concat(
         candidates.map(c=>{
-          const suffix = c.absent ? " (absente)" : c.repetition ? " (répétition)" : "";
-          const disabled = (c.absent || c.repetition) ? "disabled" : "";
+          const suffix = c.reasons.length ? ` (${c.reasons.join(", ")})` : "";
+          const disabled = c.reasons.length ? "disabled" : "";
           return `<option value="${c.id}" ${disabled}>${esc(c.name + suffix)}</option>`;
         })
       ).join("");
@@ -3395,6 +3439,7 @@ main{
       field.innerHTML = `
         <label>Personne ${i+1}</label>
         <select class="select" id="${selId}">${options}</select>
+        <div class="hint">Les sœurs grisées indiquent la raison : absente, répétition, pas compétente ou conflit horaire.</div>
       `;
       wrap.appendChild(field);
 
