@@ -600,9 +600,33 @@ main{
   width:150px;
 }
 
-#tourCycleSelect{
+#tourCycleInfo{
   grid-column:3;
-  width:150px;
+  min-width:210px;
+  align-self:center;
+}
+
+#btnCycleSettings{
+  grid-column:4;
+}
+
+#tourCycleSettings{
+  grid-column:1 / -1;
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid #e8edf5;
+  border-radius:14px;
+  background:#f8fafc;
+}
+
+#tourCycleSettings.active{
+  display:flex;
+}
+
+#tourCycleSelect{
+  width:170px;
 }
 
 #btnSaveWeekSister{
@@ -1470,13 +1494,8 @@ main{
           </div>
           <input class="input" type="date" id="sisterWeekSelect" />
           <input class="input" type="date" id="sisterDaySelect" />
-          <select class="select" id="tourCycleSelect" title="Décalage manuel du cycle des tours">
-            <option value="0">Tours S1</option>
-            <option value="1">Tours S2 pause</option>
-            <option value="2">Tours S3</option>
-            <option value="3">Tours S4 pause</option>
-            <option value="4">Tours S5</option>
-          </select>
+          <span class="pill" id="tourCycleInfo"><span class="mini"></span>Cycle des tours automatique</span>
+          <button class="btn ghost" type="button" id="btnCycleSettings">⚙ Réglages du cycle</button>
           <input class="input" id="sisterSearch" placeholder="Filtrer une sœur" />
           <select class="select" id="sisterStatusFilter">
             <option value="all">Toutes</option>
@@ -1489,6 +1508,17 @@ main{
           <button class="btn" id="btnSaveWeekSister">💾 Sauver semaine</button>
           <button class="btn ghost" id="btnPdfAbbessSister">👑 Feuille Mère Abbesse</button>
           <span class="pill ok" id="lockPillSister"><span class="mini"></span>Déverrouillé</span>
+          <div id="tourCycleSettings">
+            <span class="hint">Réglage avancé : décaler exceptionnellement le cycle.</span>
+            <select class="select" id="tourCycleSelect" title="Décalage manuel du cycle des tours">
+              <option value="0">Tours S1</option>
+              <option value="1">Tours S2 pause</option>
+              <option value="2">Tours S3</option>
+              <option value="3">Tours S4 pause</option>
+              <option value="4">Tours S5</option>
+            </select>
+            <button class="btn ghost" type="button" id="btnCycleAuto">Revenir au cycle automatique</button>
+          </div>
         </div>
         <div class="hint">Vue pensée pour partir des sœurs disponibles, puis leur répartir les tâches. Les données restent les mêmes que dans l’ancienne vue par tâche.</div>
       </div>
@@ -1972,11 +2002,18 @@ main{
 
   function updateTourCycleUI(){
     const select = $("#tourCycleSelect");
-    if(!select) return;
     const idx = currentTourCycleIndex();
-    select.value = String(idx);
     const codes = activeTourCodes();
-    select.title = codes.length ? `Tours actifs : ${codes.join(", ")}` : "Semaine de pause des tours";
+    const text = `Cycle des tours : semaine ${idx + 1} · Tours actifs : ${codes.join(", ") || "pause"}`;
+    if(select){
+      select.value = String(idx);
+      select.title = codes.length ? `Tours actifs : ${codes.join(", ")}` : "Semaine de pause des tours";
+    }
+    const info = $("#tourCycleInfo");
+    if(info){
+      info.innerHTML = `<span class="mini"></span>${esc(text)}`;
+      info.title = tourCycleOffset() ? "Cycle décalé manuellement" : "Cycle calculé automatiquement";
+    }
   }
 
   function toLocalISODate(date){
@@ -3885,6 +3922,21 @@ main{
     syncWeekInputs($("#sisterWeekSelect").value);
     await reloadAll();
     toast("Semaine chargée");
+  });
+
+  $("#btnCycleSettings").addEventListener("click", ()=>{
+    $("#tourCycleSettings").classList.toggle("active");
+  });
+
+  $("#btnCycleAuto").addEventListener("click", ()=>{
+    localStorage.removeItem("tourCycleOffset");
+    $("#tourCycleSettings").classList.remove("active");
+    updateTourCycleUI();
+    renderTasks();
+    hydrateSelects();
+    renderPlanning();
+    renderSisterPlanning();
+    toast("Cycle automatique rétabli");
   });
 
   $("#tourCycleSelect").addEventListener("change", async ()=>{
