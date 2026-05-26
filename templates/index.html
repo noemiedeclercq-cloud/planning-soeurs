@@ -579,7 +579,7 @@ main{
   grid-column:1 / -1;
   order:1;
   display:grid;
-  grid-template-columns:auto auto auto 1fr auto auto;
+  grid-template-columns:auto auto auto auto 1fr auto auto auto;
   align-items:center;
   gap:12px;
   width:100%;
@@ -587,7 +587,7 @@ main{
 
 #sisterViewToggle{
   justify-self:center;
-  grid-column:3 / 5;
+  grid-column:4 / 6;
 }
 
 #sisterWeekSelect{
@@ -600,8 +600,13 @@ main{
   width:150px;
 }
 
+#tourCycleSelect{
+  grid-column:3;
+  width:150px;
+}
+
 #btnSaveWeekSister{
-  grid-column:6;
+  grid-column:8;
   background:#7c3aed;
   color:#fff;
   border-color:#7c3aed;
@@ -609,11 +614,11 @@ main{
 }
 
 #btnPdfAbbessSister{
-  grid-column:5;
+  grid-column:7;
 }
 
 #btnGenerateSister{
-  grid-column:4;
+  grid-column:6;
 }
 
 #lockPillSister,
@@ -1465,6 +1470,13 @@ main{
           </div>
           <input class="input" type="date" id="sisterWeekSelect" />
           <input class="input" type="date" id="sisterDaySelect" />
+          <select class="select" id="tourCycleSelect" title="Décalage manuel du cycle des tours">
+            <option value="0">Tours S1</option>
+            <option value="1">Tours S2 pause</option>
+            <option value="2">Tours S3</option>
+            <option value="3">Tours S4 pause</option>
+            <option value="4">Tours S5</option>
+          </select>
           <input class="input" id="sisterSearch" placeholder="Filtrer une sœur" />
           <select class="select" id="sisterStatusFilter">
             <option value="all">Toutes</option>
@@ -1852,6 +1864,22 @@ main{
   const dayOrder = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const dayLabels = { Mon:"Lun", Tue:"Mar", Wed:"Mer", Thu:"Jeu", Fri:"Ven", Sat:"Sam", Sun:"Dim" };
   const dayNamesFR = {Mon:"Lundi",Tue:"Mardi",Wed:"Mercredi",Thu:"Jeudi",Fri:"Vendredi",Sat:"Samedi",Sun:"Dimanche"};
+  const TOUR_CYCLE = [
+    ["PTH", "PTB", "GTN"],
+    [],
+    ["PTB", "PTN", "GTH"],
+    [],
+    ["PTH", "PTN", "GTB"]
+  ];
+  const TOUR_TASKS = {
+    PTH:{ name:"Petit tour haut (PTH)", aliases:["PTH","Petit tour haut"], prio:3 },
+    PTB:{ name:"Petit tour bas (PTB)", aliases:["PTB","Petit tour bas"], prio:3 },
+    PTN:{ name:"Petit tour noviciat (PTN)", aliases:["PTN","Petit tour noviciat"], prio:3 },
+    GTH:{ name:"Grand tour haut (GTH)", aliases:["GTH","Grand tour haut"], prio:2 },
+    GTB:{ name:"Grand tour bas (GTB)", aliases:["GTB","Grand tour bas"], prio:2 },
+    GTN:{ name:"Grand tour noviciat (GTN)", aliases:["GTN","Grand tour noviciat"], prio:2 }
+  };
+  const TOUR_RULE = "tour-cycle";
 
   let sisters = [];
   let tasks = [];
@@ -1914,6 +1942,40 @@ main{
   function syncWeekInputs(value){
     if($("#weekSelect")) $("#weekSelect").value = value;
     if($("#sisterWeekSelect")) $("#sisterWeekSelect").value = value;
+    updateTourCycleUI();
+  }
+
+  function weeksBetween(startISO, endISO){
+    const start = new Date(startISO+"T00:00:00");
+    const end = new Date(endISO+"T00:00:00");
+    return Math.floor((end - start) / (7*24*3600*1000));
+  }
+
+  function tourCycleOffset(){
+    return Number(localStorage.getItem("tourCycleOffset") || 0);
+  }
+
+  function autoTourCycleIndex(weekValue=weekISO()){
+    const weeks = weeksBetween("2026-01-05", weekValue);
+    return ((weeks % TOUR_CYCLE.length) + TOUR_CYCLE.length) % TOUR_CYCLE.length;
+  }
+
+  function currentTourCycleIndex(weekValue=weekISO()){
+    const idx = autoTourCycleIndex(weekValue) + tourCycleOffset();
+    return ((idx % TOUR_CYCLE.length) + TOUR_CYCLE.length) % TOUR_CYCLE.length;
+  }
+
+  function activeTourCodes(weekValue=weekISO()){
+    return TOUR_CYCLE[currentTourCycleIndex(weekValue)] || [];
+  }
+
+  function updateTourCycleUI(){
+    const select = $("#tourCycleSelect");
+    if(!select) return;
+    const idx = currentTourCycleIndex();
+    select.value = String(idx);
+    const codes = activeTourCodes();
+    select.title = codes.length ? `Tours actifs : ${codes.join(", ")}` : "Semaine de pause des tours";
   }
 
   function toLocalISODate(date){
@@ -2095,6 +2157,64 @@ main{
     return (v === undefined) ? true : !!v;
   }
 
+  function normalizeTourName(value){
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[()]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function tourCodeForTask(task){
+    const name = normalizeTourName(task?.name);
+    const rule = normalizeTourName(task?.rule);
+    for(const [code, def] of Object.entries(TOUR_TASKS)){
+      const aliases = [code, def.name].concat(def.aliases || []).map(normalizeTourName);
+      if(aliases.some(alias => name === alias || name.includes(alias))) return code;
+      if(rule.includes(TOUR_RULE) && rule.includes(code.toLowerCase())) return code;
+    }
+    return null;
+  }
+
+  function isTourTask(task){
+    return !!tourCodeForTask(task);
+  }
+
+  function visiblePlanningTasks(){
+    const activeCodes = new Set(activeTourCodes());
+    return tasks.filter(task=>{
+      const code = tourCodeForTask(task);
+      return !code || activeCodes.has(code);
+    });
+  }
+
+  function tourTaskPayload(code){
+    const def = TOUR_TASKS[code];
+    return {
+      name:def.name,
+      moment:"AM",
+      days:["Mon"],
+      people:1,
+      type:"Flexible",
+      prio:def.prio,
+      active:true,
+      rule:`${TOUR_RULE}:${code}`,
+      time_label:"Flexible",
+      duration_minutes:60
+    };
+  }
+
+  async function ensureTourTasks(){
+    let created = false;
+    for(const code of Object.keys(TOUR_TASKS)){
+      if(tasks.some(task=>tourCodeForTask(task) === code)) continue;
+      await apiPost("/api/tasks", tourTaskPayload(code));
+      created = true;
+    }
+    if(created) tasks = await apiGet("/api/tasks");
+  }
+
   function issueFor(slotKey, taskId){
     const arr = planIssues[slotKey] || [];
     return arr.find(x => Number(x.taskId) === Number(taskId)) || null;
@@ -2246,6 +2366,7 @@ main{
 
   async function reloadAll(){
     tasks = await apiGet("/api/tasks");
+    await ensureTourTasks();
     sisters = await apiGet("/api/sisters");
     fixedAssignments = await apiGet("/api/fixed_assignments");
 
@@ -2275,7 +2396,7 @@ main{
   function renderTasks(){
     const tbody = $("#tasksTable tbody");
     tbody.innerHTML = "";
-    for(const t of tasks){
+    for(const t of visiblePlanningTasks()){
       const days = (t.days||"").split(",").filter(Boolean).map(d=>dayLabels[d]).join(" ");
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -2407,7 +2528,7 @@ main{
   function hydrateSelects(){
     $("#absenceSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
     $("#assignSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
-    $("#assignTask").innerHTML = tasks.filter(t=>Number(t.active)).map(t=>`<option value="${t.id}">${esc(t.name)} (${esc(t.moment)})</option>`).join("");
+    $("#assignTask").innerHTML = visiblePlanningTasks().filter(t=>Number(t.active)).map(t=>`<option value="${t.id}">${esc(t.name)} (${esc(t.moment)})</option>`).join("");
   }
 
   async function saveWeek(locked=false){
@@ -2587,7 +2708,7 @@ main{
           .filter(s=>Number(s.active))
           .filter(s=>!isAbsent(s.id, dateISO, moment));
 
-        const slotTasks = tasks
+        const slotTasks = visiblePlanningTasks()
           .filter(t=>Number(t.active))
           .filter(t=> (t.moment==="AM+PM") ? true : (t.moment===moment))
           .filter(t=> parseCSV(t.days).includes(dayKey))
@@ -2737,6 +2858,8 @@ main{
 
   function taskFitsSlot(task, day, moment){
     if(!Number(task.active)) return false;
+    const tourCode = tourCodeForTask(task);
+    if(tourCode && !activeTourCodes().includes(tourCode)) return false;
     if(task.moment !== "AM+PM" && task.moment !== moment) return false;
     return parseCSV(task.days).includes(day);
   }
@@ -2811,6 +2934,7 @@ main{
       <span class="summarychip">Tâches attribuées ce jour: ${totalAssigned}</span>
       <span class="summarychip">${esc(selectedDateFR)}</span>
       <span class="summarychip">Semaine du ${esc(new Date(weekISO()+"T00:00:00").toLocaleDateString("fr-BE"))}</span>
+      <span class="summarychip">Tours: ${esc(activeTourCodes().join(", ") || "pause")}</span>
     `;
 
     renderSisterWeekView(rowsBySister, loads);
@@ -3746,6 +3870,19 @@ main{
     syncWeekInputs($("#sisterWeekSelect").value);
     await reloadAll();
     toast("Semaine chargée");
+  });
+
+  $("#tourCycleSelect").addEventListener("change", async ()=>{
+    const selected = Number($("#tourCycleSelect").value || 0);
+    const auto = autoTourCycleIndex();
+    const offset = ((selected - auto) % TOUR_CYCLE.length + TOUR_CYCLE.length) % TOUR_CYCLE.length;
+    localStorage.setItem("tourCycleOffset", String(offset));
+    updateTourCycleUI();
+    renderTasks();
+    hydrateSelects();
+    renderPlanning();
+    renderSisterPlanning();
+    toast("Cycle des tours ajusté");
   });
 
   $("#sisterDaySelect").addEventListener("change", async ()=>{
