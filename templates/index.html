@@ -1871,7 +1871,7 @@ main{
     [],
     ["PTH", "PTN", "GTB"]
   ];
-  const TOUR_TASKS = {
+  const TOUR_TASK_CONFIG = {
     PTH:{ name:"Petit tour haut (PTH)", aliases:["PTH","Petit tour haut"], prio:3 },
     PTB:{ name:"Petit tour bas (PTB)", aliases:["PTB","Petit tour bas"], prio:3 },
     PTN:{ name:"Petit tour noviciat (PTN)", aliases:["PTN","Petit tour noviciat"], prio:3 },
@@ -1879,6 +1879,7 @@ main{
     GTB:{ name:"Grand tour bas (GTB)", aliases:["GTB","Grand tour bas"], prio:2 },
     GTN:{ name:"Grand tour noviciat (GTN)", aliases:["GTN","Grand tour noviciat"], prio:2 }
   };
+  const TOUR_TASKS = TOUR_TASK_CONFIG;
   const TOUR_RULE = "tour-cycle";
 
   let sisters = [];
@@ -2181,6 +2182,14 @@ main{
     return !!tourCodeForTask(task);
   }
 
+  function isInternalTourRule(rule){
+    return normalizeTourName(rule).startsWith(TOUR_RULE);
+  }
+
+  function displayTaskRule(task){
+    return isInternalTourRule(task?.rule) ? "" : (task?.rule || "");
+  }
+
   function visiblePlanningTasks(){
     const activeCodes = new Set(activeTourCodes());
     return tasks.filter(task=>{
@@ -2205,14 +2214,18 @@ main{
     };
   }
 
-  async function ensureTourTasks(){
+  async function ensureTourTasksExist(){
     let created = false;
-    for(const code of Object.keys(TOUR_TASKS)){
+    for(const code of ["PTH", "PTB", "PTN", "GTH", "GTB", "GTN"]){
       if(tasks.some(task=>tourCodeForTask(task) === code)) continue;
       await apiPost("/api/tasks", tourTaskPayload(code));
       created = true;
     }
     if(created) tasks = await apiGet("/api/tasks");
+  }
+
+  async function ensureTourTasks(){
+    await ensureTourTasksExist();
   }
 
   function issueFor(slotKey, taskId){
@@ -2398,9 +2411,10 @@ main{
     tbody.innerHTML = "";
     for(const t of visiblePlanningTasks()){
       const days = (t.days||"").split(",").filter(Boolean).map(d=>dayLabels[d]).join(" ");
+      const rule = displayTaskRule(t);
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><strong>${esc(t.name)}</strong>${t.rule?`<div class="hint" title="${esc(t.rule)}">${esc(shorten(t.rule,52))}</div>`:""}</td>
+        <td><strong>${esc(t.name)}</strong>${rule?`<div class="hint" title="${esc(rule)}">${esc(shorten(rule,52))}</div>`:""}</td>
         <td>${esc(t.moment)}</td>
         <td>${esc(t.time_label || "—")}</td>
         <td>${Number(t.duration_minutes || 0)} min</td>
@@ -2825,7 +2839,7 @@ main{
                   <span class="mini-tag">${t.people} pers</span>
                   <span class="mini-tag">${esc(normalizeTimeLabel(t.time_label, t.moment))}</span>
                   <span class="mini-tag">${Number(t.duration_minutes || 0)} min</span>
-                  ${t.rule ? `<span class="mini-tag" title="${esc(t.rule)}">Règle</span>` : ""}
+                  ${displayTaskRule(t) ? `<span class="mini-tag" title="${esc(displayTaskRule(t))}">Règle</span>` : ""}
                   ${badge ? badge : ""}
                 </div>
               </div>
@@ -3467,7 +3481,7 @@ main{
       return {
         name,
         who,
-        rule:t.rule||"",
+        rule:displayTaskRule(t),
         type:t.type,
         prio:Number(t.prio||2),
         time_label: normalizeTimeLabel(t.time_label, t.moment)
@@ -3617,7 +3631,7 @@ main{
     $("#taskType").value = task?.type || "Fixe";
     $("#taskPrio").value = String(task?.prio ?? 2);
     $("#taskActive").checked = task ? !!Number(task.active) : true;
-    $("#taskRule").value = task?.rule || "";
+    $("#taskRule").value = displayTaskRule(task);
     const selected = new Set((task?.days||"Mon,Tue,Wed,Thu,Fri").split(",").filter(Boolean));
     $$("#taskDays input[type=checkbox]").forEach(cb=>cb.checked = selected.has(cb.value));
     $("#modalTask").classList.add("active");
@@ -3627,6 +3641,7 @@ main{
     const name = $("#taskName").value.trim();
     if(!name) return toast("Nom requis");
 
+    const savedRule = $("#taskRule").value.trim() || (isTourTask(editingTask) ? editingTask.rule : "");
     const payload = {
       name,
       moment: $("#taskMoment").value,
@@ -3636,7 +3651,7 @@ main{
       type: $("#taskType").value,
       prio: Number($("#taskPrio").value),
       active: $("#taskActive").checked,
-      rule: $("#taskRule").value.trim(),
+      rule: savedRule,
       days: $$("#taskDays input[type=checkbox]").filter(cb=>cb.checked).map(cb=>cb.value),
     };
     if(payload.days.length===0) return toast("Choisis des jours");
