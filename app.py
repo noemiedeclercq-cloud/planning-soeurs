@@ -4,30 +4,11 @@ import os
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, redirect, request, render_template, session, url_for
-from db import init_db, get_conn, log_database_diagnostics
+from db import init_db, get_conn
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") or os.getenv("PLANNING_PASSWORD") or "dev-secret-change-me"
-print("[planning-soeurs] app import: calling init_db()", flush=True)
 init_db()
-print("[planning-soeurs] app import: init_db() returned", flush=True)
-log_database_diagnostics("after app import init_db")
-
-
-def trace(message):
-    print(f"[planning-soeurs] UI trace: {message}", flush=True)
-
-
-def compact_sql(sql):
-    return " ".join(sql.strip().split())
-
-
-@app.before_request
-def trace_request():
-    trace(
-        f"HTTP {request.method} {request.path} endpoint={request.endpoint} "
-        f"args={dict(request.args)} session_authenticated={bool(session.get('authenticated'))}"
-    )
 
 
 def auth_enabled():
@@ -186,7 +167,6 @@ def sister_in_repetition(repetition_days: str, day_key: str, moment: str, start:
 
 @app.get("/")
 def home():
-    trace("route home() called; rendering template=index.html; no SQL in Flask route")
     return render_template("index.html")
 
 
@@ -194,18 +174,13 @@ def home():
 @app.get("/api/tasks")
 def list_tasks():
     conn = get_conn()
-    sql = """
+    rows = conn.execute("""
         SELECT id, name, moment, days, people, type, prio, active, rule,
                time_label, duration_minutes
         FROM tasks
         ORDER BY active DESC, prio ASC, name ASC
-    """
-    rows = conn.execute(sql).fetchall()
+    """).fetchall()
     conn.close()
-    trace(
-        f"route list_tasks(); sql={compact_sql(sql)}; filters=none; "
-        f"rows_returned={len(rows)}"
-    )
     return jsonify([dict(r) for r in rows])
 
 
@@ -294,18 +269,12 @@ def delete_task(task_id: int):
 @app.get("/api/sisters")
 def list_sisters():
     conn = get_conn()
-    sql = """
+    rows = conn.execute("""
         SELECT id, name, active, restr, repetition_days
         FROM sisters
         ORDER BY active DESC, name ASC
-    """
-    rows = conn.execute(sql).fetchall()
+    """).fetchall()
     conn.close()
-    active_count = sum(1 for r in rows if int(r["active"] or 0) == 1)
-    trace(
-        f"route list_sisters(); sql={compact_sql(sql)}; filters=none; "
-        f"rows_returned={len(rows)} active_rows={active_count}"
-    )
     return jsonify([dict(r) for r in rows])
 
 
@@ -374,17 +343,12 @@ def delete_sister(sister_id: int):
 @app.get("/api/eligibility/<int:sister_id>")
 def get_eligibility(sister_id: int):
     conn = get_conn()
-    sql = """
+    rows = conn.execute("""
         SELECT task_id, allowed
         FROM eligibility
         WHERE sister_id=?
-    """
-    rows = conn.execute(sql, (sister_id,)).fetchall()
+    """, (sister_id,)).fetchall()
     conn.close()
-    trace(
-        f"route get_eligibility(sister_id={sister_id}); sql={compact_sql(sql)}; "
-        f"params={(sister_id,)}; filters=sister_id; rows_returned={len(rows)}"
-    )
 
     out = {int(r["task_id"]): bool(r["allowed"]) for r in rows}
     return jsonify(out)
@@ -437,40 +401,27 @@ def list_absences():
 
     conn = get_conn()
     if start and end:
-        sql = """
+        rows = conn.execute("""
             SELECT id, sister_id, date, moment, reason
             FROM absences
             WHERE date >= ? AND date <= ?
             ORDER BY date ASC, sister_id ASC
-        """
-        params = (start, end)
-        filters = "date range"
-        rows = conn.execute(sql, params).fetchall()
+        """, (start, end)).fetchall()
     elif date:
-        sql = """
+        rows = conn.execute("""
             SELECT id, sister_id, date, moment, reason
             FROM absences
             WHERE date=?
             ORDER BY date ASC, sister_id ASC
-        """
-        params = (date,)
-        filters = "date"
-        rows = conn.execute(sql, params).fetchall()
+        """, (date,)).fetchall()
     else:
-        sql = """
+        rows = conn.execute("""
             SELECT id, sister_id, date, moment, reason
             FROM absences
             ORDER BY date DESC, sister_id ASC
             LIMIT 500
-        """
-        params = ()
-        filters = "limit 500"
-        rows = conn.execute(sql).fetchall()
+        """).fetchall()
     conn.close()
-    trace(
-        f"route list_absences(); sql={compact_sql(sql)}; params={params}; "
-        f"filters={filters}; rows_returned={len(rows)}"
-    )
 
     return jsonify([dict(r) for r in rows])
 
@@ -509,17 +460,12 @@ def delete_absence(absence_id: int):
 @app.get("/api/fixed_assignments")
 def list_fixed_assignments():
     conn = get_conn()
-    sql = """
+    rows = conn.execute("""
         SELECT id, sister_id, task_id, days, moment, start, end, type
         FROM fixed_assignments
         ORDER BY start DESC, type ASC, sister_id ASC
-    """
-    rows = conn.execute(sql).fetchall()
+    """).fetchall()
     conn.close()
-    trace(
-        f"route list_fixed_assignments(); sql={compact_sql(sql)}; "
-        f"filters=none; rows_returned={len(rows)}"
-    )
     return jsonify([dict(r) for r in rows])
 
 
@@ -560,36 +506,24 @@ def delete_fixed_assignment(fa_id: int):
 def get_plan(week: str):
     conn = get_conn()
 
-    plan_sql = """
+    plan = conn.execute("""
         SELECT id, week, locked
         FROM plans
         WHERE week=?
-    """
-    plan = conn.execute(plan_sql, (week,)).fetchone()
+    """, (week,)).fetchone()
 
     if not plan:
         conn.close()
-        trace(
-            f"route get_plan(week={week}); sql={compact_sql(plan_sql)}; "
-            f"params={(week,)}; filters=week; plan_found=False; items_returned=0"
-        )
         return jsonify({"exists": False})
 
-    items_sql = """
+    items = conn.execute("""
         SELECT day, moment, task_id, sister_ids
         FROM plan_items
         WHERE plan_id=?
         ORDER BY day ASC, moment ASC, task_id ASC
-    """
-    items = conn.execute(items_sql, (plan["id"],)).fetchall()
+    """, (plan["id"],)).fetchall()
 
     conn.close()
-    trace(
-        f"route get_plan(week={week}); sql_plan={compact_sql(plan_sql)}; "
-        f"sql_items={compact_sql(items_sql)}; params_plan={(week,)}; "
-        f"params_items={(plan['id'],)}; filters=week,plan_id; "
-        f"plan_found=True; items_returned={len(items)}"
-    )
 
     planning = {}
     for r in items:
@@ -730,14 +664,9 @@ def check_plan(week: str):
     """
     conn = get_conn()
 
-    plan_sql = "SELECT id FROM plans WHERE week=?"
-    plan = conn.execute(plan_sql, (week,)).fetchone()
+    plan = conn.execute("SELECT id FROM plans WHERE week=?", (week,)).fetchone()
     if not plan:
         conn.close()
-        trace(
-            f"route check_plan(week={week}); sql_plan={compact_sql(plan_sql)}; "
-            f"params={(week,)}; filters=week; plan_found=False"
-        )
         return jsonify({
             "exists": False,
             "issues": {},
@@ -754,50 +683,45 @@ def check_plan(week: str):
 
     plan_id = plan["id"]
 
-    task_sql = """
+    task_rows = conn.execute("""
         SELECT id, name, people, active, moment, time_label, duration_minutes
         FROM tasks
-    """
-    task_rows = conn.execute(task_sql).fetchall()
+    """).fetchall()
     tasks_by_id = {int(r["id"]): r for r in task_rows}
     active_task_ids = {int(r["id"]) for r in task_rows if int(r["active"]) == 1}
 
-    items_sql = """
+    items = conn.execute("""
         SELECT day, moment, task_id, sister_ids
         FROM plan_items
         WHERE plan_id=?
-    """
-    items = conn.execute(items_sql, (plan_id,)).fetchall()
+    """, (plan_id,)).fetchall()
 
     week_start = week
     week_end = add_days(week, 6)
 
-    abs_sql = """
+    abs_rows_raw = conn.execute("""
         SELECT sister_id, date, moment
         FROM absences
         WHERE date >= ? AND date <= ?
-    """
-    abs_rows_raw = conn.execute(abs_sql, (week_start, week_end)).fetchall()
+    """, (week_start, week_end)).fetchall()
 
     abs_rows = {(r["date"], r["moment"], int(r["sister_id"])) for r in abs_rows_raw}
     weekly_absence_count = len(abs_rows_raw)
 
-    elig_sql = """
+    elig_rows = conn.execute("""
         SELECT sister_id, task_id, allowed
         FROM eligibility
-    """
-    elig_rows = conn.execute(elig_sql).fetchall()
+    """).fetchall()
     allowed_map = {}
     for r in elig_rows:
         sid = int(r["sister_id"])
         tid = int(r["task_id"])
         allowed_map[(sid, tid)] = int(r["allowed"]) == 1
 
-    sister_sql = """
+    sister_rows = conn.execute("""
         SELECT id, active, repetition_days
         FROM sisters
-    """
-    sister_rows = conn.execute(sister_sql).fetchall()
+    """).fetchall()
     active_sisters = {int(r["id"]) for r in sister_rows if int(r["active"]) == 1}
     repetition_by_sister = {int(r["id"]): r["repetition_days"] or "" for r in sister_rows}
 
@@ -929,16 +853,6 @@ def check_plan(week: str):
     )
 
     conn.close()
-    trace(
-        f"route check_plan(week={week}); sql_plan={compact_sql(plan_sql)}; "
-        f"sql_tasks={compact_sql(task_sql)}; sql_items={compact_sql(items_sql)}; "
-        f"sql_absences={compact_sql(abs_sql)}; sql_eligibility={compact_sql(elig_sql)}; "
-        f"sql_sisters={compact_sql(sister_sql)}; filters=week,plan_id,date_range,active_sisters_in_python; "
-        f"task_rows={len(task_rows)} active_task_rows={len(active_task_ids)} "
-        f"plan_items={len(items)} absences={len(abs_rows_raw)} eligibility_rows={len(elig_rows)} "
-        f"sister_rows={len(sister_rows)} active_sister_rows={len(active_sisters)} "
-        f"issues_total={summary['total_problems']}"
-    )
     return jsonify({
         "exists": True,
         "week": week,
@@ -970,14 +884,9 @@ def abbess_daily_view(date_iso: str):
 
     conn = get_conn()
 
-    plan_sql = "SELECT id FROM plans WHERE week=?"
-    plan = conn.execute(plan_sql, (week,)).fetchone()
+    plan = conn.execute("SELECT id FROM plans WHERE week=?", (week,)).fetchone()
     if not plan:
         conn.close()
-        trace(
-            f"route abbess_daily_view(date_iso={date_iso}); sql_plan={compact_sql(plan_sql)}; "
-            f"params={(week,)}; filters=week; plan_found=False; rows_returned=0"
-        )
         return jsonify({
             "date": date_iso,
             "week": week,
@@ -985,23 +894,21 @@ def abbess_daily_view(date_iso: str):
             "rows": []
         })
 
-    items_sql = """
+    items = conn.execute("""
         SELECT pi.moment, pi.task_id, pi.sister_ids,
                t.name, t.time_label, t.duration_minutes, t.type, t.prio
         FROM plan_items pi
         JOIN tasks t ON t.id = pi.task_id
         WHERE pi.plan_id=? AND pi.day=?
         ORDER BY pi.moment ASC, t.prio ASC, t.name ASC
-    """
-    items = conn.execute(items_sql, (plan["id"], day_key)).fetchall()
+    """, (plan["id"], day_key)).fetchall()
 
-    sisters_sql = """
+    sisters = conn.execute("""
         SELECT id, name
         FROM sisters
         WHERE active=1
         ORDER BY name ASC
-    """
-    sisters = conn.execute(sisters_sql).fetchall()
+    """).fetchall()
     sister_name = {int(s["id"]): s["name"] for s in sisters}
 
     rows_by_sister = {}
@@ -1035,13 +942,6 @@ def abbess_daily_view(date_iso: str):
         })
 
     conn.close()
-    trace(
-        f"route abbess_daily_view(date_iso={date_iso}); sql_plan={compact_sql(plan_sql)}; "
-        f"sql_items={compact_sql(items_sql)}; sql_sisters={compact_sql(sisters_sql)}; "
-        f"params_plan={(week,)}; params_items={(plan['id'], day_key)}; "
-        f"filters=week,plan_id,day,active=1; items_returned={len(items)} "
-        f"active_sisters_returned={len(sisters)} rows_returned={len(out_rows)}"
-    )
     return jsonify({
         "date": date_iso,
         "week": week,

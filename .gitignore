@@ -2,3 +2,9 @@
 __pycache__/
 planning.db
 .vercel
+*.db-shm
+*.db-wal
+local-test-libsql.db
+libsql-local-test.db
+pyproject.toml
+uv.lock

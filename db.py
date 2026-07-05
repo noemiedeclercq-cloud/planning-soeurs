@@ -1,8 +1,19 @@
 # db.py
 import os
 import sqlite3
-import tempfile
 from pathlib import Path
+
+
+def libsql_url():
+    return os.getenv("TURSO_DATABASE_URL") or os.getenv("LIBSQL_URL")
+
+
+def libsql_auth_token():
+    return os.getenv("TURSO_AUTH_TOKEN") or os.getenv("LIBSQL_AUTH_TOKEN")
+
+
+def use_libsql():
+    return bool(libsql_url())
 
 
 def get_database_path() -> Path:
@@ -14,86 +25,107 @@ def get_database_path() -> Path:
         return Path("/var/data/planning.db")
 
     if os.getenv("VERCEL"):
-        return Path(tempfile.gettempdir()) / "planning-soeurs" / "planning.db"
+        raise RuntimeError(
+            "Vercel requires a persistent database. Set TURSO_DATABASE_URL "
+            "and TURSO_AUTH_TOKEN instead of using temporary SQLite storage."
+        )
 
     return Path(__file__).with_name("planning.db")
 
 
-DB_PATH = get_database_path()
+DB_PATH = None if use_libsql() else get_database_path()
+
+
+class LibsqlRow(dict):
+    pass
+
+
+class LibsqlCursor:
+    def __init__(self, result):
+        self.lastrowid = result.last_insert_rowid
+        self.rowcount = result.rows_affected
+        self._rows = [
+            LibsqlRow(zip(result.columns, row))
+            for row in result.rows
+        ]
+
+    def fetchall(self):
+        return self._rows
+
+    def fetchone(self):
+        return self._rows[0] if self._rows else None
+
+
+class LibsqlConnection:
+    def __init__(self):
+        from libsql_client import create_client_sync
+
+        kwargs = {}
+        token = libsql_auth_token()
+        if token:
+            kwargs["auth_token"] = token
+
+        self._client = create_client_sync(libsql_url(), **kwargs)
+        self._tx = self._client.transaction()
+        self._closed = False
+        self._completed = False
+
+    def execute(self, sql, params=None):
+        params = tuple(params or ())
+        result = self._tx.execute(sql, params)
+        return LibsqlCursor(result)
+
+    def executescript(self, script):
+        for statement in split_sql_script(script):
+            self.execute(statement)
+
+    def commit(self):
+        if not self._completed:
+            self._tx.commit()
+            self._completed = True
+
+    def rollback(self):
+        if not self._completed:
+            self._tx.rollback()
+            self._completed = True
+
+    def close(self):
+        if self._closed:
+            return
+        try:
+            if not self._completed:
+                self._tx.rollback()
+                self._completed = True
+        finally:
+            self._client.close()
+            self._closed = True
+
+
+def split_sql_script(script):
+    statements = []
+    current = []
+
+    for line in script.splitlines():
+        current.append(line)
+        candidate = "\n".join(current).strip()
+        if candidate and sqlite3.complete_statement(candidate):
+            statements.append(candidate)
+            current = []
+
+    tail = "\n".join(current).strip()
+    if tail:
+        statements.append(tail)
+
+    return statements
 
 
 def get_conn():
+    if use_libsql():
+        return LibsqlConnection()
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
-
-def _database_file_info(path: Path):
-    exists = path.exists()
-    if not exists:
-        return {
-            "exists": False,
-            "size": None,
-            "inode": None,
-        }
-
-    stat = path.stat()
-    return {
-        "exists": True,
-        "size": stat.st_size,
-        "inode": getattr(stat, "st_ino", None),
-    }
-
-
-def _read_table_count(path: Path, table_name: str):
-    if not path.exists():
-        return "unavailable: database file does not exist"
-
-    try:
-        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-        count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        conn.close()
-        return count
-    except Exception as exc:
-        return f"error: {exc}"
-
-
-def _table_exists(path: Path, table_name: str):
-    if not path.exists():
-        return False
-
-    try:
-        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-        row = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,),
-        ).fetchone()
-        conn.close()
-        return row is not None
-    except Exception:
-        return "unknown"
-
-
-def log_database_diagnostics(label: str):
-    path = get_database_path()
-    info = _database_file_info(path)
-
-    print(f"[planning-soeurs] SQLite runtime diagnostic: {label}", flush=True)
-    print(f"[planning-soeurs] os.getcwd={os.getcwd()}", flush=True)
-    print(f"[planning-soeurs] env.DATABASE_PATH={os.getenv('DATABASE_PATH')}", flush=True)
-    print(f"[planning-soeurs] env.PLANNING_DB_PATH={os.getenv('PLANNING_DB_PATH')}", flush=True)
-    print(f"[planning-soeurs] env.RENDER={os.getenv('RENDER')}", flush=True)
-    print(f"[planning-soeurs] env.VERCEL={os.getenv('VERCEL')}", flush=True)
-    print(f"[planning-soeurs] get_database_path={path}", flush=True)
-    print(f"[planning-soeurs] database_exists={info['exists']}", flush=True)
-    print(f"[planning-soeurs] database_size_bytes={info['size']}", flush=True)
-    print(f"[planning-soeurs] database_inode={info['inode']}", flush=True)
-    print(f"[planning-soeurs] table_exists.sisters={_table_exists(path, 'sisters')}", flush=True)
-    print(f"[planning-soeurs] table_exists.tasks={_table_exists(path, 'tasks')}", flush=True)
-    print(f"[planning-soeurs] table_exists.plans={_table_exists(path, 'plans')}", flush=True)
-    print(f"[planning-soeurs] count.sisters={_read_table_count(path, 'sisters')}", flush=True)
-    print(f"[planning-soeurs] count.tasks={_read_table_count(path, 'tasks')}", flush=True)
-    print(f"[planning-soeurs] count.plans={_read_table_count(path, 'plans')}", flush=True)
 
 
 def column_exists(conn, table_name, column_name):
@@ -107,16 +139,15 @@ def ensure_column(conn, table_name, column_name, ddl):
 
 
 def init_db():
-    print("[planning-soeurs] init_db: starting", flush=True)
-    log_database_diagnostics("before init_db")
-
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if DB_PATH is not None:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     conn = get_conn()
 
-    conn.executescript("""
-    PRAGMA journal_mode=WAL;
+    if not use_libsql():
+        conn.execute("PRAGMA journal_mode=WAL")
 
+    conn.executescript("""
     CREATE TABLE IF NOT EXISTS tasks (
       id                INTEGER PRIMARY KEY AUTOINCREMENT,
       name              TEXT NOT NULL,
@@ -196,6 +227,3 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-    print("[planning-soeurs] init_db: finished", flush=True)
-    log_database_diagnostics("after init_db")
