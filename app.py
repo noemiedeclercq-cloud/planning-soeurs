@@ -4,11 +4,14 @@ import os
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, redirect, request, render_template, session, url_for
-from db import init_db, get_conn
+from db import init_db, get_conn, log_database_diagnostics
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") or os.getenv("PLANNING_PASSWORD") or "dev-secret-change-me"
+print("[planning-soeurs] app import: calling init_db()", flush=True)
 init_db()
+print("[planning-soeurs] app import: init_db() returned", flush=True)
+log_database_diagnostics("after app import init_db")
 
 
 def auth_enabled():
