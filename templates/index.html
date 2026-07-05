@@ -1928,10 +1928,17 @@ main{
   let currentIssueIndex = 0;
   let abbessRows = [];
   let sisterViewMode = "week";
+  function uiTrace(message, data){
+    console.log("[planning-soeurs] UI trace:", message, data || {});
+  }
   async function apiGet(url){
+    uiTrace("HTTP GET start", { url });
     const r = await fetch(url);
     if(!r.ok) throw new Error(await r.text());
-    return r.json();
+    const data = await r.json();
+    const size = Array.isArray(data) ? data.length : (data && typeof data === "object" ? Object.keys(data).length : null);
+    uiTrace("HTTP GET done", { url, status:r.status, response_shape:Array.isArray(data) ? "array" : typeof data, response_size:size });
+    return data;
   }
   async function apiPost(url, body){
     const r = await fetch(url, {
@@ -2415,20 +2422,57 @@ main{
   }
 
   async function reloadAll(){
+    uiTrace("reloadAll start", {
+      week: weekISO(),
+      selectedDate: $("#absenceDate")?.value,
+      filters: "client later applies active filters in planning/sister planning/task selects"
+    });
     tasks = await apiGet("/api/tasks");
+    uiTrace("reloadAll tasks loaded", {
+      tasks: tasks.length,
+      activeTasks: tasks.filter(t=>Number(t.active)).length,
+      visiblePlanningTasks: visiblePlanningTasks().length,
+      filters: "visiblePlanningTasks filters tour-cycle tasks only; active filter applied later with Number(t.active)"
+    });
     await ensureTourTasks();
+    uiTrace("reloadAll after ensureTourTasks", {
+      tasks: tasks.length,
+      activeTasks: tasks.filter(t=>Number(t.active)).length,
+      visiblePlanningTasks: visiblePlanningTasks().length,
+      note: "ensureTourTasks can POST missing tour tasks if absent"
+    });
     sisters = await apiGet("/api/sisters");
+    uiTrace("reloadAll sisters loaded", {
+      sisters: sisters.length,
+      activeSisters: sisters.filter(s=>Number(s.active)).length,
+      filters: "management table renders all sisters; planning views use Number(s.active)"
+    });
     fixedAssignments = await apiGet("/api/fixed_assignments");
+    uiTrace("reloadAll fixed assignments loaded", { fixedAssignments: fixedAssignments.length });
 
     await reloadAbsencesForDate($("#absenceDate").value);
     await loadAllEligibility();
+    uiTrace("reloadAll eligibility loaded", { sisters: sisters.length, eligibilityMaps: Object.keys(eligibilityBySister || {}).length });
 
     const saved = await apiGet("/api/plans/" + encodeURIComponent(weekISO()));
+    uiTrace("reloadAll plan loaded", {
+      week: weekISO(),
+      exists: !!saved.exists,
+      planningSlots: saved.planning ? Object.keys(saved.planning).length : 0,
+      locked: !!saved.locked
+    });
     if(saved.exists){
       planning = saved.planning || {};
       setLockedUI(saved.locked);
     }else{
       setLockedUI(false);
+      uiTrace("reloadAll plan missing; generating planning client-side", {
+        week: weekISO(),
+        tasks: tasks.length,
+        activeTasks: tasks.filter(t=>Number(t.active)).length,
+        sisters: sisters.length,
+        activeSisters: sisters.filter(s=>Number(s.active)).length
+      });
       generatePlanningSmart();
     }
 
@@ -2441,12 +2485,25 @@ main{
     renderPlanning();
     renderSisterPlanning();
     await loadAbbessForSelectedDay();
+    uiTrace("reloadAll finished", {
+      tasks: tasks.length,
+      sisters: sisters.length,
+      activeSisters: sisters.filter(s=>Number(s.active)).length,
+      planningSlots: Object.keys(planning || {}).length
+    });
   }
 
   function renderTasks(){
     const tbody = $("#tasksTable tbody");
     tbody.innerHTML = "";
-    for(const t of visiblePlanningTasks()){
+    const visibleTasks = visiblePlanningTasks();
+    uiTrace("renderTasks", {
+      tasks: tasks.length,
+      visiblePlanningTasks: visibleTasks.length,
+      activeVisibleTasks: visibleTasks.filter(t=>Number(t.active)).length,
+      filters: "visiblePlanningTasks filters tour-cycle tasks; table itself does not remove inactive tasks"
+    });
+    for(const t of visibleTasks){
       const days = (t.days||"").split(",").filter(Boolean).map(d=>dayLabels[d]).join(" ");
       const rule = displayTaskRule(t);
       const tr = document.createElement("tr");
@@ -2480,6 +2537,11 @@ main{
   function renderSisters(){
     const tbody = $("#sistersTable tbody");
     tbody.innerHTML="";
+    uiTrace("renderSisters", {
+      sisters: sisters.length,
+      activeSisters: sisters.filter(s=>Number(s.active)).length,
+      filters: "none in management table; inactive sisters are still rendered"
+    });
     for(const s of sisters){
       const repetition = parseCSV(s.repetition_days || "").map(d=>dayLabels[d]).join(" ");
       const tr = document.createElement("tr");
@@ -2509,6 +2571,12 @@ main{
     tbody.innerHTML="";
     const selectedDate = $("#absenceDate").value;
     const visibleAbsences = absences.filter(a => !selectedDate || a.date === selectedDate);
+    uiTrace("renderAbsences", {
+      absences: absences.length,
+      selectedDate,
+      visibleAbsences: visibleAbsences.length,
+      filters: "client date equals selectedDate"
+    });
     if(visibleAbsences.length===0){
       const tr=document.createElement("tr");
       tr.innerHTML=`<td colspan="5" style="color:var(--muted);font-weight:900;">Aucune absence ce jour-là.</td>`;
@@ -2545,6 +2613,10 @@ main{
   function renderFixedAssignments(){
     const tbody=$("#assignTable tbody");
     tbody.innerHTML="";
+    uiTrace("renderFixedAssignments", {
+      fixedAssignments: fixedAssignments.length,
+      filters: "none"
+    });
     if(fixedAssignments.length===0){
       const tr=document.createElement("tr");
       tr.innerHTML=`<td colspan="8" style="color:var(--muted);font-weight:900;">Aucune affectation.</td>`;
@@ -2577,6 +2649,11 @@ main{
   }
 
   function hydrateSelects(){
+    uiTrace("hydrateSelects", {
+      sistersOptions: sisters.length,
+      assignTaskOptions: visiblePlanningTasks().filter(t=>Number(t.active)).length,
+      filters: "tasks filtered by visiblePlanningTasks and Number(t.active); sisters unfiltered"
+    });
     $("#absenceSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
     $("#assignSister").innerHTML = sisters.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
     $("#assignTask").innerHTML = visiblePlanningTasks().filter(t=>Number(t.active)).map(t=>`<option value="${t.id}">${esc(t.name)} (${esc(t.moment)})</option>`).join("");
@@ -2835,6 +2912,22 @@ main{
   }
 
   function renderPlanning(){
+    const slotCount = Object.keys(planning || {}).length;
+    const itemCount = Object.values(planning || {}).reduce((sum, items)=>sum + (items || []).length, 0);
+    const assignedCount = Object.values(planning || {}).reduce(
+      (sum, items)=>sum + (items || []).reduce((inner, it)=>inner + ((it.assigned || []).length), 0),
+      0
+    );
+    uiTrace("renderPlanning", {
+      week: weekISO(),
+      planningSlots: slotCount,
+      planningItems: itemCount,
+      assignedSisterRefs: assignedCount,
+      tasks: tasks.length,
+      sisters: sisters.length,
+      activeSisters: sisters.filter(s=>Number(s.active)).length,
+      filters: "taskFitsSlot uses Number(task.active), tour cycle, moment, days; assigned names require matching sister ids"
+    });
     for(const day of dayOrder){
       for(const moment of ["AM","PM"]){
         const slotKey = `${day}-${moment}`;
@@ -2953,6 +3046,16 @@ main{
     const selectedDay = dayKeyFromDateISO(selectedDate);
     const selectedDateFR = new Date(selectedDate+"T00:00:00").toLocaleDateString("fr-BE", { weekday:"long", day:"numeric", month:"long" });
     const activeSisters = sisters.filter(s=>Number(s.active));
+    uiTrace("renderSisterPlanning", {
+      mode: sisterViewMode,
+      selectedDate,
+      selectedDay,
+      sisters: sisters.length,
+      activeSisters: activeSisters.length,
+      sisterSearch: $("#sisterSearch")?.value || "",
+      statusFilter: $("#sisterStatusFilter")?.value || "all",
+      filters: "starts with Number(s.active), then optional search and status filter"
+    });
     const loads = {};
     const rowsBySister = {};
     const dayRowsBySister = {};
