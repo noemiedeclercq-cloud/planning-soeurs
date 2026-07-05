@@ -5,7 +5,10 @@ from pathlib import Path
 
 
 def libsql_url():
-    return os.getenv("TURSO_DATABASE_URL") or os.getenv("LIBSQL_URL")
+    raw_url = os.getenv("TURSO_DATABASE_URL") or os.getenv("LIBSQL_URL")
+    if raw_url and raw_url.startswith("libsql://"):
+        return "https://" + raw_url[len("libsql://"):]
+    return raw_url
 
 
 def libsql_auth_token():
@@ -14,6 +17,17 @@ def libsql_auth_token():
 
 def use_libsql():
     return bool(libsql_url())
+
+
+def log_libsql_environment():
+    print(
+        "[planning-soeurs] libSQL config: "
+        f"TURSO_DATABASE_URL_present={bool(os.getenv('TURSO_DATABASE_URL'))} "
+        f"LIBSQL_URL_present={bool(os.getenv('LIBSQL_URL'))} "
+        f"TURSO_AUTH_TOKEN_present={bool(os.getenv('TURSO_AUTH_TOKEN'))} "
+        f"LIBSQL_AUTH_TOKEN_present={bool(os.getenv('LIBSQL_AUTH_TOKEN'))}",
+        flush=True,
+    )
 
 
 def get_database_path() -> Path:
@@ -138,11 +152,29 @@ def ensure_column(conn, table_name, column_name, ddl):
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {ddl}")
 
 
+def table_exists(conn, table_name):
+    row = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def core_schema_exists(conn):
+    return all(table_exists(conn, table) for table in ("sisters", "tasks", "plans"))
+
+
 def init_db():
     if DB_PATH is not None:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     conn = get_conn()
+    if use_libsql():
+        log_libsql_environment()
+        if core_schema_exists(conn):
+            conn.commit()
+            conn.close()
+            return
 
     if not use_libsql():
         conn.execute("PRAGMA journal_mode=WAL")

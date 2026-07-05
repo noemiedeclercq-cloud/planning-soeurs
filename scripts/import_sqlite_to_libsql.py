@@ -19,7 +19,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from db import init_db
+from db import init_db, libsql_auth_token, libsql_url
 
 
 TABLES = [
@@ -31,10 +31,6 @@ TABLES = [
     "plan_items",
     "eligibility",
 ]
-
-
-def env(name, fallback=None):
-    return os.getenv(name) or (os.getenv(fallback) if fallback else None)
 
 
 def quote_identifier(name):
@@ -49,8 +45,8 @@ def main():
     if not sqlite_path.exists():
         raise SystemExit(f"SQLite file not found: {sqlite_path}")
 
-    url = env("TURSO_DATABASE_URL", "LIBSQL_URL")
-    token = env("TURSO_AUTH_TOKEN", "LIBSQL_AUTH_TOKEN")
+    url = libsql_url()
+    token = libsql_auth_token()
     if not url:
         raise SystemExit("Set TURSO_DATABASE_URL or LIBSQL_URL before importing")
 
