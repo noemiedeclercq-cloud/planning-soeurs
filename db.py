@@ -4,15 +4,24 @@ import sqlite3
 from pathlib import Path
 
 
+def env_value(name):
+    value = os.getenv(name)
+    if value is None:
+        return None
+
+    value = value.strip()
+    return value or None
+
+
 def libsql_url():
-    raw_url = os.getenv("TURSO_DATABASE_URL") or os.getenv("LIBSQL_URL")
+    raw_url = env_value("TURSO_DATABASE_URL") or env_value("LIBSQL_URL")
     if raw_url and raw_url.startswith("libsql://"):
         return "https://" + raw_url[len("libsql://"):]
     return raw_url
 
 
 def libsql_auth_token():
-    return os.getenv("TURSO_AUTH_TOKEN") or os.getenv("LIBSQL_AUTH_TOKEN")
+    return env_value("TURSO_AUTH_TOKEN") or env_value("LIBSQL_AUTH_TOKEN")
 
 
 def use_libsql():
@@ -22,23 +31,24 @@ def use_libsql():
 def log_libsql_environment():
     print(
         "[planning-soeurs] libSQL config: "
-        f"TURSO_DATABASE_URL_present={bool(os.getenv('TURSO_DATABASE_URL'))} "
-        f"LIBSQL_URL_present={bool(os.getenv('LIBSQL_URL'))} "
-        f"TURSO_AUTH_TOKEN_present={bool(os.getenv('TURSO_AUTH_TOKEN'))} "
-        f"LIBSQL_AUTH_TOKEN_present={bool(os.getenv('LIBSQL_AUTH_TOKEN'))}",
+        f"TURSO_DATABASE_URL_present={bool(env_value('TURSO_DATABASE_URL'))} "
+        f"TURSO_AUTH_TOKEN_present={bool(env_value('TURSO_AUTH_TOKEN'))} "
+        f"LIBSQL_URL_present={bool(env_value('LIBSQL_URL'))} "
+        f"LIBSQL_AUTH_TOKEN_present={bool(env_value('LIBSQL_AUTH_TOKEN'))} "
+        f"use_libsql={use_libsql()}",
         flush=True,
     )
 
 
 def get_database_path() -> Path:
-    configured_path = os.getenv("DATABASE_PATH") or os.getenv("PLANNING_DB_PATH")
+    configured_path = env_value("DATABASE_PATH") or env_value("PLANNING_DB_PATH")
     if configured_path:
         return Path(configured_path)
 
-    if os.getenv("RENDER"):
+    if env_value("RENDER"):
         return Path("/var/data/planning.db")
 
-    if os.getenv("VERCEL"):
+    if env_value("VERCEL"):
         raise RuntimeError(
             "Vercel requires a persistent database. Set TURSO_DATABASE_URL "
             "and TURSO_AUTH_TOKEN instead of using temporary SQLite storage."
@@ -47,7 +57,10 @@ def get_database_path() -> Path:
     return Path(__file__).with_name("planning.db")
 
 
-DB_PATH = None if use_libsql() else get_database_path()
+log_libsql_environment()
+
+USE_LIBSQL = use_libsql()
+DB_PATH = None if USE_LIBSQL else get_database_path()
 
 
 class LibsqlRow(dict):
@@ -134,7 +147,7 @@ def split_sql_script(script):
 
 
 def get_conn():
-    if use_libsql():
+    if USE_LIBSQL:
         return LibsqlConnection()
 
     conn = sqlite3.connect(DB_PATH)
@@ -169,14 +182,13 @@ def init_db():
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     conn = get_conn()
-    if use_libsql():
-        log_libsql_environment()
+    if USE_LIBSQL:
         if core_schema_exists(conn):
             conn.commit()
             conn.close()
             return
 
-    if not use_libsql():
+    if not USE_LIBSQL:
         conn.execute("PRAGMA journal_mode=WAL")
 
     conn.executescript("""
