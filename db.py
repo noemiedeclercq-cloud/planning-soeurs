@@ -1,12 +1,25 @@
 # db.py
 import os
 import sqlite3
+import tempfile
 from pathlib import Path
 
-if os.getenv("RENDER"):
-    DB_PATH = Path("/var/data/planning.db")
-else:
-    DB_PATH = Path(__file__).with_name("planning.db")
+
+def database_path() -> Path:
+    configured_path = os.getenv("DATABASE_PATH") or os.getenv("PLANNING_DB_PATH")
+    if configured_path:
+        return Path(configured_path)
+
+    if os.getenv("RENDER"):
+        return Path("/var/data/planning.db")
+
+    if os.getenv("VERCEL"):
+        return Path(tempfile.gettempdir()) / "planning-soeurs" / "planning.db"
+
+    return Path(__file__).with_name("planning.db")
+
+
+DB_PATH = database_path()
 
 
 def get_conn():
