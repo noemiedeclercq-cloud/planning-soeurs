@@ -2,8 +2,9 @@
 import hmac
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
-from flask import Flask, jsonify, redirect, request, render_template, session, url_for
+from flask import Flask, jsonify, redirect, request, render_template, send_file, session, url_for
 from db import init_db, get_conn
 
 app = Flask(__name__)
@@ -954,6 +955,20 @@ def abbess_daily_view(date_iso: str):
 @app.get("/api/health")
 def health():
     return jsonify({"ok": True})
+
+
+@app.get("/admin/export-db")
+def export_db():
+    expected_token = os.getenv("EXPORT_DB_TOKEN", "")
+    provided_token = request.args.get("token", "")
+    if not expected_token or not hmac.compare_digest(provided_token, expected_token):
+        return "Forbidden", 403
+
+    db_path = Path("/var/data/planning.db")
+    if not db_path.exists():
+        return "Not found", 404
+
+    return send_file(db_path, as_attachment=True, download_name="planning.db")
 
 
 if __name__ == "__main__":
