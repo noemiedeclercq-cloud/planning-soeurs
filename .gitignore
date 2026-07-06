@@ -6,5 +6,4 @@ planning.db
 *.db-wal
 local-test-libsql.db
 libsql-local-test.db
-pyproject.toml
 uv.lock
